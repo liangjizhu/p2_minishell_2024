@@ -3,17 +3,18 @@
 //  MSH main file
 // Write your msh source code here
 
-//#include "parser.h"
+// #include "parser.h"
+#include <parser.h>
 #include <stddef.h>			/* NULL */
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <wait.h>
+// #include <wait.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <sys/wait.h>
+// #include <sys/wait.h>
 #include <signal.h>
 
 #define MAX_COMMANDS 8
@@ -206,4 +207,4 @@ int main(int argc, char* argv[])
 	}
 	
 	return 0;
-}
+};
