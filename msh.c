@@ -194,13 +194,37 @@ int main(int argc, char* argv[])
 
 
 		/************************ STUDENTS CODE ********************************/
-	   if (command_counter > 0) {
+        
+	    if (command_counter > 0) {
 			if (command_counter > MAX_COMMANDS){
 				printf("Error: Maximum number of commands is %d \n", MAX_COMMANDS);
 			}
 			else {
 				// Print command
 				print_command(argvv, filev, in_background);
+
+                // read_command (char ***argvv, char **filev, int *bg);
+                // ctrl + c -> 0
+                // error -> -1
+                // num of commands -> n
+                for (int n = 1; n < sizeof(argvv); n++)
+                    {
+                        // command in position i
+                        printf("Command %i: %s\n", n, argvv[n][0]);
+
+                        // its first argumment
+                        printf("Argumment %i: %s\n", n, argvv[n][1]);
+
+                        // (<) filev[0] string contains name of input file 
+                        // (>) filev[1] string contains name of output file 
+                        // (!>) filev[2] string contains name of error output file
+
+                        printf("File %i: %s\n", n, filev[0]);
+                        // in_background used for checking if is executed in background
+                        // 0 = yes
+                        // 1 = no
+                        printf("Background %i: %d\n", n, in_background);
+                    }
 			}
 		}
 	}
