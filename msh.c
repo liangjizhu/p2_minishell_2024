@@ -207,24 +207,35 @@ int main(int argc, char* argv[])
                 // ctrl + c -> 0
                 // error -> -1
                 // num of commands -> n
+                /* for (int n = 1; n < sizeof(argvv); n++)
+                {
+                    // command in position i
+                    printf("Command %i: %s\n", n, argvv[n][0]);
+
+                    // its first argumment
+                    printf("Argumment %i: %s\n", n, argvv[n][1]);
+
+                    // (<) filev[0] string contains name of input file 
+                    // (>) filev[1] string contains name of output file 
+                    // (!>) filev[2] string contains name of error output file
+
+                    printf("File %i: %s\n", n, filev[0]);
+                    // in_background used for checking if is executed in background
+                    // 0 = yes
+                    // 1 = no
+                    printf("Background %i: %d\n", n, in_background);
+                }
+                */
+                /*printf("%c", argvv);
                 for (int n = 1; n < sizeof(argvv); n++)
+                {
+                    if (argvv[n][0] == "ls -l")
                     {
-                        // command in position i
-                        printf("Command %i: %s\n", n, argvv[n][0]);
-
-                        // its first argumment
-                        printf("Argumment %i: %s\n", n, argvv[n][1]);
-
-                        // (<) filev[0] string contains name of input file 
-                        // (>) filev[1] string contains name of output file 
-                        // (!>) filev[2] string contains name of error output file
-
-                        printf("File %i: %s\n", n, filev[0]);
-                        // in_background used for checking if is executed in background
-                        // 0 = yes
-                        // 1 = no
-                        printf("Background %i: %d\n", n, in_background);
+                        execl("/bin/ls", "ls", "-l", (char *)NULL);
+                        perror("execl");
                     }
+
+                }*/
 			}
 		}
 	}
