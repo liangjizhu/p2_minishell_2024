@@ -192,6 +192,119 @@ int main(int argc, char* argv[])
     }
 		//************************************************************************************************
 
+		char input[1024];
+        char *commands[128];
+
+        while (1) {
+            printf("MSH>> ");
+            fflush(stdout);
+
+            if (!fgets(input, sizeof(input), stdin)) break; // Termina si se detecta EOF
+            input[strcspn(input, "\n")] = 0; // Remueve el carácter de nueva línea
+
+            bool runInBackground = false;
+            if (input[strlen(input) - 1] == '&') {
+                runInBackground = true;
+                input[strlen(input) - 1] = 0; // Elimina el '&' del final
+            }
+
+            int n_commands = 0;
+            commands[n_commands] = strtok(input, "|");
+            while (commands[n_commands] != NULL) {
+                n_commands++;
+                commands[n_commands] = strtok(NULL, "|");
+            }
+
+            int fd[2], in_fd = STDIN_FILENO;
+            for (int i = 0; i < n_commands; i++) {
+                if (i < n_commands - 1) { // No es el último comando, crea una tubería
+                    pipe(fd);
+                }
+
+
+                char *argv[128];
+                int argc = 0;
+
+                argv[argc] = strtok(commands[i], " ");
+                while (argv[argc] != NULL) {
+                    // Detén la búsqueda si encuentras símbolos de redirección
+                    if (strcmp(argv[argc], "<") == 0 || strcmp(argv[argc], ">") == 0 || strcmp(argv[argc], "!>") == 0) {
+                        break;
+                    }
+                    argc++;
+                    argv[argc] = strtok(NULL, " ");
+                }
+
+                pid_t pid = fork();
+
+                if (pid == 0) { // Proceso hijo
+                    // Aplica la redirección de entrada si es necesario
+                    if (in_fd != STDIN_FILENO) {
+                        dup2(in_fd, STDIN_FILENO);
+                        close(in_fd);
+                    }
+                    // Aplica la redirección de salida si no es el último comando
+                    if (i != n_commands - 1) {
+                        dup2(fd[1], STDOUT_FILENO);
+                        close(fd[1]);
+                    }
+
+                    // Manejo de redirecciones dentro del comando
+                    for (int i = 0; argv[i] != NULL; i++) {
+                        if (strcmp(argv[i], "<") == 0 && argv[i + 1] != NULL) {
+                            int fd = open(argv[i + 1], O_RDONLY);
+                            dup2(fd, STDIN_FILENO);
+                            close(fd);
+                        } else if (strcmp(argv[i], ">") == 0 && argv[i + 1] != NULL) {
+                            int fd = open(argv[i + 1], O_WRONLY | O_CREAT | O_TRUNC, 0644);
+                            dup2(fd, STDOUT_FILENO);
+                            close(fd);
+                        } else if (strcmp(argv[i], "!>") == 0 && argv[i + 1] != NULL) {
+                            int fd = open(argv[i + 1], O_WRONLY | O_CREAT | O_TRUNC, 0644);
+                            dup2(fd, STDERR_FILENO);
+                            close(fd);
+                        }
+                        argv[i] = NULL; // Elimina el resto de los argumentos después de la redirección
+                    }
+
+                    if (execvp(argv[0], argv) == -1) {
+                        perror("execvp");
+                        exit(EXIT_FAILURE);
+                    }
+
+                    close(fd[0]);
+                    close(fd[1]);
+
+                } 
+                else if (pid < 0) {
+                    perror("fork");
+                    exit(EXIT_FAILURE);
+                }
+
+                if (i != n_commands - 1) {
+                    close(fd[1]);
+                }
+
+                if (!runInBackground || i == n_commands - 1) {
+                    wait(NULL); // Espera al proceso hijo si no es en segundo plano o es el último comando
+                } else {
+                    printf("[PID] %d running in background\n", pid);
+                }
+
+                
+            }
+        
+            if (i < n_commands - 1) {
+            in_fd = fd[0];
+            } 
+            else {
+                // Si es el último comando, no hay necesidad de mantener el último in_fd abierto
+                if (in_fd != STDIN_FILENO) {
+                    close(in_fd);
+                }
+            }
+        }
+
 
 		/************************ STUDENTS CODE ********************************/
         
