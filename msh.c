@@ -3,17 +3,20 @@
 //  MSH main file
 // Write your msh source code here
 
-// #include "parser.h"
+//#include "parser.h"
 #include <stddef.h>			/* NULL */
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-// #include <wait.h>
+#include <wait.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-// #include <sys/wait.h>
+
+#include <stdbool.h>
+
+#include <sys/wait.h>
 #include <signal.h>
 
 #define MAX_COMMANDS 8
@@ -192,6 +195,7 @@ int main(int argc, char* argv[])
     }
 		//************************************************************************************************
 
+        /*
 		char input[1024];
         char *commands[128];
 
@@ -202,9 +206,9 @@ int main(int argc, char* argv[])
             if (!fgets(input, sizeof(input), stdin)) break; // Termina si se detecta EOF
             input[strcspn(input, "\n")] = 0; // Remueve el carácter de nueva línea
 
-            bool runInBackground = false;
+            bool runInBackground = 0;
             if (input[strlen(input) - 1] == '&') {
-                runInBackground = true;
+                runInBackground = 1;
                 input[strlen(input) - 1] = 0; // Elimina el '&' del final
             }
 
@@ -303,7 +307,7 @@ int main(int argc, char* argv[])
                     close(in_fd);
                 }
             }
-        }
+        } */
 
 
 		/************************ STUDENTS CODE ********************************/
@@ -350,6 +354,28 @@ int main(int argc, char* argv[])
 
                 }*/
 			}
+            // Process each command
+            for (int i = 0; i < command_counter; i++) {
+                // Fork a new process
+                pid_t pid = fork();
+                if (pid == 0) { // Child process
+                    // Handle redirection if necessary
+
+                    // Execute the command
+                    execvp(argvv[i][0], argvv[i]);
+                    // If execvp returns, an error occurred
+                    perror("execvp");
+                    exit(EXIT_FAILURE);
+                } else if (pid > 0) { // Parent process
+                    if (!in_background) {
+                        // Wait for the child process to finish
+                        waitpid(pid, NULL, 0);
+                    }
+                } else {
+                    // Handle fork failure
+                    perror("fork");
+                }
+            }
 		}
 	}
 	
