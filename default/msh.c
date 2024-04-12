@@ -33,8 +33,32 @@ void siginthandler(int param)
 }
 
 /* myhistory */
+void execute_myhistory(char **history, int count) {
+    for (int i = 0; i < count; i++) {
+        printf("%d: %s\n", i, history[i]);
+    }
+}
 
-/* myhistory */
+/* mycalc */
+void mycalc(char **args) {
+    int x = atoi(args[1]);
+    int y = atoi(args[3]);
+    char *operator = args[2];
+
+    if (strcmp(operator, "add") == 0) {
+        printf("%d\n", x + y);
+    } else if (strcmp(operator, "mul") == 0) {
+        printf("%d\n", x * y);
+    } else if (strcmp(operator, "div") == 0) {
+        if (y != 0) {
+            printf("%d\n", x / y);
+        } else {
+            printf("Error: Division by zero\n");
+        }
+    } else {
+        printf("Invalid operation\n");
+    }
+}
 
 struct command
 {
