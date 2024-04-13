@@ -384,7 +384,7 @@ int main(int argc, char* argv[])
                 pid_t pid = fork();
                 if (pid == 0) { // Child process
                     // Handle redirection if necessary
-
+                    printf("Child ID: %d", pid)
                     // Execute the command
                     execvp(argvv[i][0], argvv[i]);
                     // If execvp returns, an error occurred
