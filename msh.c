@@ -24,9 +24,10 @@
 // files in case of redirection
 char filev[3][64];
 
-//to store the execvp second parameter
+// to store the execvp second parameter
 char *argv_execvp[8];
 
+// CTRL + C to exit 
 void siginthandler(int param)
 {
 	printf("****  Exiting MSH **** \n");
@@ -34,14 +35,9 @@ void siginthandler(int param)
 	exit(0);
 }
 
-/* myhistory */
-void execute_myhistory(char **history, int count) {
-    for (int i = 0; i < count; i++) {
-        printf("%d: %s\n", i, history[i]);
-    }
-}
+// myhistory function
 
-/* mycalc */
+// mycalc function
 void mycalc(char **args) {
     int x = atoi(args[1]);
     int y = atoi(args[3]);
@@ -62,6 +58,7 @@ void mycalc(char **args) {
     }
 }
 
+// command structure
 struct command
 {
   // Store the number of commands in argvv
@@ -77,11 +74,17 @@ struct command
 };
 
 int history_size = 20;
+
+// a pointer named history that is intended to point to an array or a single instance of struct command
 struct command * history;
+
+// linear buffer
 int head = 0;
 int tail = 0;
+
 int n_elem = 0;
 
+// free_command function
 void free_command(struct command *cmd)
 {
     if((*cmd).argvv != NULL)
@@ -171,6 +174,8 @@ int main(int argc, char* argv[])
 	char *cmd_line = NULL;
 	char *cmd_lines[10];
 
+    // isatty function call checks if the standard input is a terminal
+    // FALSE -> redirection or pipe
 	if (!isatty(STDIN_FILENO)) {
 		cmd_line = (char*)malloc(100);
 		while (scanf(" %[^\n]", cmd_line) != EOF){
@@ -178,6 +183,7 @@ int main(int argc, char* argv[])
 			cmd_lines[end] = (char*)malloc(strlen(cmd_line)+1);
 			strcpy(cmd_lines[end], cmd_line);
 			end++;
+            // clear (flush) the output buffer and move buffered data to the console or the respective file
 			fflush (stdin);
 			fflush(stdout);
 		}
@@ -188,6 +194,8 @@ int main(int argc, char* argv[])
 	char ***argvv = NULL;
 	int num_commands;
 
+    // history_size = 20
+    // allocating the sizeof command
 	history = (struct command*) malloc(history_size *sizeof(struct command));
 	int run_history = 0;
 
@@ -384,7 +392,7 @@ int main(int argc, char* argv[])
                 pid_t pid = fork();
                 if (pid == 0) { // Child process
                     // Handle redirection if necessary
-                    printf("Child ID: %d", pid)
+                    
                     // Execute the command
                     execvp(argvv[i][0], argvv[i]);
                     // If execvp returns, an error occurred
