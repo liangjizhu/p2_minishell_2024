@@ -348,68 +348,116 @@ int main(int argc, char* argv[])
 			if (command_counter > MAX_COMMANDS){
 				printf("Error: Maximum number of commands is %d \n", MAX_COMMANDS);
 			}
-			else {
-				// Print command
-				print_command(argvv, filev, in_background);
-
-                // read_command (char ***argvv, char **filev, int *bg);
-                // ctrl + c -> 0
-                // error -> -1
-                // num of commands -> n
-                /* for (int n = 1; n < sizeof(argvv); n++)
-                {
-                    // command in position i
-                    printf("Command %i: %s\n", n, argvv[n][0]);
-
-                    // its first argumment
-                    printf("Argumment %i: %s\n", n, argvv[n][1]);
-
-                    // (<) filev[0] string contains name of input file 
-                    // (>) filev[1] string contains name of output file 
-                    // (!>) filev[2] string contains name of error output file
-
-                    printf("File %i: %s\n", n, filev[0]);
-                    // in_background used for checking if is executed in background
-                    // 0 = yes
-                    // 1 = no
-                    printf("Background %i: %d\n", n, in_background);
-                }
-                */
-                /*printf("%c", argvv);
-                for (int n = 1; n < sizeof(argvv); n++)
-                {
-                    if (argvv[n][0] == "ls -l")
-                    {
-                        execl("/bin/ls", "ls", "-l", (char *)NULL);
-                        perror("execl");
-                    }
-
-                }*/
-			}
-            // Process each command
-            for (int i = 0; i < command_counter; i++) {
-                // Fork a new process
-                pid_t pid = fork();
-                if (pid == 0) { // Child process
-                    // Handle redirection if necessary
-                    
-                    // Execute the command
-                    execvp(argvv[i][0], argvv[i]);
-                    // If execvp returns, an error occurred
-                    perror("execvp");
-                    exit(EXIT_FAILURE);
-                } else if (pid > 0) { // Parent process
-                    if (!in_background) {
-                        // Wait for the child process to finish
-                        waitpid(pid, NULL, 0);
-                    }
-                } else {
-                    // Handle fork failure
-                    perror("fork");
-                }
+            else {
+                // Print command
+                print_command(argvv, filev, in_background);
             }
-		}
-	}
-	
+        }
+
+
+        // 1. Process a single command
+        pid_t pid = fork();
+        
+        // Child process
+        if (pid == 0) {                     
+            // Execute the command
+            execvp(argvv[0][0], argvv[0]);
+            // If execvp returns, an error occurred
+            perror("execvp error");
+            exit(EXIT_FAILURE);
+        }
+        // Parent process
+        else if (pid > 0) { 
+            if (!in_background) {
+                // Wait for the child process to finish
+                waitpid(pid, NULL, 0);
+            }
+            else {
+                // 2. single command in background running (parent) 
+                printf("Process %d running in background\n", pid);
+            }
+        } 
+        else {
+            // Handle fork failure
+            perror("fork error");
+        }
+
+        // 3. Execution of sequences of commands connected through pipes
+        if (3 == command_counter)
+        {
+            printf("hola");
+            // 3 commands 2 pipes needed
+            int pipe1[2], pipe2[2];
+            
+            // 3 childs
+            pid_t pid1, pid2, pid3;
+            
+            // Create the first pipe
+            if (pipe(pipe1) == -1) {
+                perror("pipe1");
+                exit(EXIT_FAILURE);
+            }
+
+            // Fork the first process
+            if ((pid1 = fork()) == 0) {
+                // First child executes `ls -l`
+                dup2(pipe1[1], STDOUT_FILENO);
+                close(pipe1[0]);
+                close(pipe1[1]);
+
+                execvp(argvv[0][0], argvv[0]);
+                perror("execvp ls");
+                exit(EXIT_FAILURE);
+            }
+
+            // Create the second pipe
+            if (pipe(pipe2) == -1) {
+                perror("pipe2");
+                exit(EXIT_FAILURE);
+            }
+
+            // Fork the second process
+            if ((pid2 = fork()) == 0) {
+                // Second child executes `sort`
+                dup2(pipe1[0], STDIN_FILENO);
+                dup2(pipe2[1], STDOUT_FILENO);
+                close(pipe1[0]);
+                close(pipe1[1]);
+                close(pipe2[0]);
+                close(pipe2[1]);
+
+                execvp(argvv[1][0], argvv[1]);
+                perror("execvp sort");
+                exit(EXIT_FAILURE);
+            }
+
+            // Close the first pipe completely on the parent
+            close(pipe1[0]);
+            close(pipe1[1]);
+
+            // Fork the third process
+            if ((pid3 = fork()) == 0) {
+                // Third child executes `wc`
+                dup2(pipe2[0], STDIN_FILENO);
+                close(pipe2[0]);
+                close(pipe2[1]);
+
+                execvp(argvv[2][0], argvv[2]);
+                perror("execvp wc");
+                exit(EXIT_FAILURE);
+            }
+
+            // Close the second pipe completely on the parent
+            close(pipe2[0]);
+            close(pipe2[1]);
+
+            // Wait for all children to complete
+            waitpid(pid1, NULL, 0);
+            waitpid(pid2, NULL, 0);
+            waitpid(pid3, NULL, 0);
+
+        }
+
+    }
 	return 0;
 };
