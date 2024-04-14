@@ -60,7 +60,7 @@ void siginthandler(int param)
 int acc = 0; // Variable global para mantener el acumulador para la suma.
 
 void mycalc(char* args) {
-    printf("ejecutando mycalc")
+    printf("ejecutando mycalc");
     int op1, op2, result, remainder;
     char* operator;
 
@@ -103,7 +103,7 @@ void mycalc(char* args) {
         fprintf(stderr, "[OK] %d / %d = %d; Remainder %d\n", op1, op2, result, remainder);
     } else {
         printf("[ERROR] The structure of the command is mycalc <operand 1> <add/mul/div> <operand 2>\n");
-        }
+    }
 }
 
 
@@ -289,7 +289,6 @@ int main(int argc, char* argv[])
 
         if (strncmp(input, "mycalc ", 7) == 0) {
             mycalc(input + 7);
-            continue;
             } else if (strcmp(input, "exit") == 0) {
                 break;
             } else {
