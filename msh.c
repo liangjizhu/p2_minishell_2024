@@ -213,7 +213,7 @@ void mycalc(char **args) {
         remainder = op1 % op2;
         fprintf(stderr, "[OK] %d / %d = %d; Remainder %d\n", op1, op2, result, remainder);
     } else {
-        printf("[ERROR] Invalid operation\n");
+        printf("[ERROR] The structure of the command is mycalc <operand 1> <add/mul/div> <operand 2>\n");
     }
 }
 
