@@ -281,7 +281,7 @@ int main(int argc, char* argv[])
 
 		/************************ STUDENTS CODE ********************************/
         char input[1024];
-        
+
         if (!fgets(input, sizeof(input), stdin)) {
             break;
         }
@@ -289,11 +289,12 @@ int main(int argc, char* argv[])
 
         if (strncmp(input, "mycalc ", 7) == 0) {
             mycalc(input + 7);
+            continue;
             } else if (strcmp(input, "exit") == 0) {
                 break;
             } else {
                 printf("[ERROR] Unknown command\n");
-            }
+                }
         
 	    if (command_counter > 0) {
 			if (command_counter > MAX_COMMANDS){
@@ -344,84 +345,7 @@ int main(int argc, char* argv[])
         else{
             // 3. Execution of sequences of commands connected through pipes
             execute_command_sequence(&argvv, command_counter);
-        }
-
-        // 3. Execution of sequences of commands connected through pipes
-        // if (3 == command_counter)
-        // {
-        //     printf("hola");
-        //     // 3 commands 2 pipes needed
-        //     int pipe1[2], pipe2[2];
-            
-        //     // 3 childs
-        //     pid_t pid1, pid2, pid3;
-            
-        //     // Create the first pipe
-        //     if (pipe(pipe1) == -1) {
-        //         perror("pipe1");
-        //         exit(EXIT_FAILURE);
-        //     }
-
-        //     // Fork the first process
-        //     if ((pid1 = fork()) == 0) {
-        //         // First child executes `ls -l`
-        //         dup2(pipe1[1], STDOUT_FILENO);
-        //         close(pipe1[0]);
-        //         close(pipe1[1]);
-
-        //         execvp(argvv[0][0], argvv[0]);
-        //         perror("execvp ls");
-        //         exit(EXIT_FAILURE);
-        //     }
-
-        //     // Create the second pipe
-        //     if (pipe(pipe2) == -1) {
-        //         perror("pipe2");
-        //         exit(EXIT_FAILURE);
-        //     }
-
-        //     // Fork the second process
-        //     if ((pid2 = fork()) == 0) {
-        //         // Second child executes `sort`
-        //         dup2(pipe1[0], STDIN_FILENO);
-        //         dup2(pipe2[1], STDOUT_FILENO);
-        //         close(pipe1[0]);
-        //         close(pipe1[1]);
-        //         close(pipe2[0]);
-        //         close(pipe2[1]);
-
-        //         execvp(argvv[1][0], argvv[1]);
-        //         perror("execvp sort");
-        //         exit(EXIT_FAILURE);
-        //     }
-
-        //     // Close the first pipe completely on the parent
-        //     close(pipe1[0]);
-        //     close(pipe1[1]);
-
-        //     // Fork the third process
-        //     if ((pid3 = fork()) == 0) {
-        //         // Third child executes `wc`
-        //         dup2(pipe2[0], STDIN_FILENO);
-        //         close(pipe2[0]);
-        //         close(pipe2[1]);
-
-        //         execvp(argvv[2][0], argvv[2]);
-        //         perror("execvp wc");
-        //         exit(EXIT_FAILURE);
-        //     }
-
-        //     // Close the second pipe completely on the parent
-        //     close(pipe2[0]);
-        //     close(pipe2[1]);
-
-        //     // Wait for all children to complete
-        //     waitpid(pid1, NULL, 0);
-        //     waitpid(pid2, NULL, 0);
-        //     waitpid(pid3, NULL, 0);
-
-        // }
-        
+        }        
         
     }
 	return 0;
