@@ -360,6 +360,7 @@ int main(int argc, char* argv[])
         
 
         // 1. Execution of simple commands
+								// if there is only one single command, no pipes
         if (1 == command_counter)
         {
             pid_t pid = fork();
