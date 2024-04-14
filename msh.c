@@ -58,6 +58,9 @@ void mycalc(char **args) {
     }
 }
 
+void execute_command_sequence(char ****argvv, int num_commands);
+void redirect_io(char *input_file, char *output_file, char *error_file);
+
 // command structure
 struct command
 {
@@ -354,110 +357,200 @@ int main(int argc, char* argv[])
             }
         }
 
-
-        // 1. Process a single command
-        pid_t pid = fork();
         
-        // Child process
-        if (pid == 0) {                     
-            // Execute the command
-            execvp(argvv[0][0], argvv[0]);
-            // If execvp returns, an error occurred
-            perror("execvp error");
-            exit(EXIT_FAILURE);
-        }
-        // Parent process
-        else if (pid > 0) { 
-            if (!in_background) {
-                // Wait for the child process to finish
-                waitpid(pid, NULL, 0);
+
+        // 1. Execution of simple commands
+        if (1 == command_counter)
+        {
+            pid_t pid = fork();
+            // Child process
+            if (pid == 0) {
+                // 4. Execution of simple commands and sequence of commands with redirections (input, output
+                // and error) and in background.
+                if (filev){
+                    redirect_io(filev[0], filev[1], filev[2]);
+                }                
+                // Execute the command
+                execvp(argvv[0][0], argvv[0]);
+                // If execvp returns, an error occurred
+                perror("execvp error");
+                exit(EXIT_FAILURE);
             }
+            // Parent process
+            else if (pid > 0) { 
+                if (!in_background) {
+                    // Wait for the child process to finish
+                    waitpid(pid, NULL, 0);
+                }
+                else {
+                    // 2. single command in background running (parent) 
+                    printf("Process %d running in background\n", pid);
+                }
+            } 
             else {
-                // 2. single command in background running (parent) 
-                printf("Process %d running in background\n", pid);
+                // Handle fork failure
+                perror("fork error");
             }
-        } 
-        else {
-            // Handle fork failure
-            perror("fork error");
+        }
+        else{
+            // 3. Execution of sequences of commands connected through pipes
+            execute_command_sequence(&argvv, command_counter);
         }
 
         // 3. Execution of sequences of commands connected through pipes
-        if (3 == command_counter)
-        {
-            printf("hola");
-            // 3 commands 2 pipes needed
-            int pipe1[2], pipe2[2];
+        // if (3 == command_counter)
+        // {
+        //     printf("hola");
+        //     // 3 commands 2 pipes needed
+        //     int pipe1[2], pipe2[2];
             
-            // 3 childs
-            pid_t pid1, pid2, pid3;
+        //     // 3 childs
+        //     pid_t pid1, pid2, pid3;
             
-            // Create the first pipe
-            if (pipe(pipe1) == -1) {
-                perror("pipe1");
-                exit(EXIT_FAILURE);
-            }
+        //     // Create the first pipe
+        //     if (pipe(pipe1) == -1) {
+        //         perror("pipe1");
+        //         exit(EXIT_FAILURE);
+        //     }
 
-            // Fork the first process
-            if ((pid1 = fork()) == 0) {
-                // First child executes `ls -l`
-                dup2(pipe1[1], STDOUT_FILENO);
-                close(pipe1[0]);
-                close(pipe1[1]);
+        //     // Fork the first process
+        //     if ((pid1 = fork()) == 0) {
+        //         // First child executes `ls -l`
+        //         dup2(pipe1[1], STDOUT_FILENO);
+        //         close(pipe1[0]);
+        //         close(pipe1[1]);
 
-                execvp(argvv[0][0], argvv[0]);
-                perror("execvp ls");
-                exit(EXIT_FAILURE);
-            }
+        //         execvp(argvv[0][0], argvv[0]);
+        //         perror("execvp ls");
+        //         exit(EXIT_FAILURE);
+        //     }
 
-            // Create the second pipe
-            if (pipe(pipe2) == -1) {
-                perror("pipe2");
-                exit(EXIT_FAILURE);
-            }
+        //     // Create the second pipe
+        //     if (pipe(pipe2) == -1) {
+        //         perror("pipe2");
+        //         exit(EXIT_FAILURE);
+        //     }
 
-            // Fork the second process
-            if ((pid2 = fork()) == 0) {
-                // Second child executes `sort`
-                dup2(pipe1[0], STDIN_FILENO);
-                dup2(pipe2[1], STDOUT_FILENO);
-                close(pipe1[0]);
-                close(pipe1[1]);
-                close(pipe2[0]);
-                close(pipe2[1]);
+        //     // Fork the second process
+        //     if ((pid2 = fork()) == 0) {
+        //         // Second child executes `sort`
+        //         dup2(pipe1[0], STDIN_FILENO);
+        //         dup2(pipe2[1], STDOUT_FILENO);
+        //         close(pipe1[0]);
+        //         close(pipe1[1]);
+        //         close(pipe2[0]);
+        //         close(pipe2[1]);
 
-                execvp(argvv[1][0], argvv[1]);
-                perror("execvp sort");
-                exit(EXIT_FAILURE);
-            }
+        //         execvp(argvv[1][0], argvv[1]);
+        //         perror("execvp sort");
+        //         exit(EXIT_FAILURE);
+        //     }
 
-            // Close the first pipe completely on the parent
-            close(pipe1[0]);
-            close(pipe1[1]);
+        //     // Close the first pipe completely on the parent
+        //     close(pipe1[0]);
+        //     close(pipe1[1]);
 
-            // Fork the third process
-            if ((pid3 = fork()) == 0) {
-                // Third child executes `wc`
-                dup2(pipe2[0], STDIN_FILENO);
-                close(pipe2[0]);
-                close(pipe2[1]);
+        //     // Fork the third process
+        //     if ((pid3 = fork()) == 0) {
+        //         // Third child executes `wc`
+        //         dup2(pipe2[0], STDIN_FILENO);
+        //         close(pipe2[0]);
+        //         close(pipe2[1]);
 
-                execvp(argvv[2][0], argvv[2]);
-                perror("execvp wc");
-                exit(EXIT_FAILURE);
-            }
+        //         execvp(argvv[2][0], argvv[2]);
+        //         perror("execvp wc");
+        //         exit(EXIT_FAILURE);
+        //     }
 
-            // Close the second pipe completely on the parent
-            close(pipe2[0]);
-            close(pipe2[1]);
+        //     // Close the second pipe completely on the parent
+        //     close(pipe2[0]);
+        //     close(pipe2[1]);
 
-            // Wait for all children to complete
-            waitpid(pid1, NULL, 0);
-            waitpid(pid2, NULL, 0);
-            waitpid(pid3, NULL, 0);
+        //     // Wait for all children to complete
+        //     waitpid(pid1, NULL, 0);
+        //     waitpid(pid2, NULL, 0);
+        //     waitpid(pid3, NULL, 0);
 
-        }
+        // }
 
     }
 	return 0;
 };
+
+// 3. Execution of sequences of commands connected through pipes
+void execute_command_sequence(char ****argvv, int num_commands) {
+    int num_pipes = num_commands - 1;
+    int pipe_fds[2 * num_pipes];
+
+    // Create all necessary pipes
+    for (int i = 0; i < num_pipes; i++) {
+        if (pipe(pipe_fds + i * 2) == -1) {
+            perror("pipe");
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    // Execute each command
+    for (int i = 0; i < num_commands; i++) {
+        pid_t pid = fork();
+        if (pid == 0) { // Child process
+            // If not the first command, get input from the previous pipe
+            if (i != 0) {
+                if (dup2(pipe_fds[(i - 1) * 2], STDIN_FILENO) == -1) {
+                    perror("dup2");
+                    exit(EXIT_FAILURE);
+                }
+            }
+            // If not the last command, output to the next pipe
+            if (i != num_commands - 1) {
+                if (dup2(pipe_fds[i * 2 + 1], STDOUT_FILENO) == -1) {
+                    perror("dup2");
+                    exit(EXIT_FAILURE);
+                }
+            }
+
+            // Close all pipes (very important! prevents hanging)
+            for (int j = 0; j < 2 * num_pipes; j++) {
+                close(pipe_fds[j]);
+            }
+
+            // Execute the command
+            execvp((*argvv)[i][0], (*argvv)[i]);
+            perror("execvp");
+            exit(EXIT_FAILURE);
+        } else if (pid < 0) {
+            perror("fork");
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    // Parent closes all pipes
+    for (int i = 0; i < 2 * num_pipes; i++) {
+        close(pipe_fds[i]);
+    }
+
+    // Parent waits for all child processes to complete
+    for (int i = 0; i < num_commands; i++) {
+        wait(NULL);
+    }
+}
+
+// 4. Execution of simple commands and sequence of commands with redirections (input, output
+// and error) and in background.
+void redirect_io(char *input_file, char *output_file, char *error_file) {
+    if (input_file) {
+        int in_fd = open(input_file, O_RDONLY);
+        dup2(in_fd, STDIN_FILENO);
+        close(in_fd);
+    }
+    if (output_file) {
+        int out_fd = open(output_file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+        dup2(out_fd, STDOUT_FILENO);
+        close(out_fd);
+    }
+    if (error_file) {
+        int err_fd = open(error_file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+        dup2(err_fd, STDERR_FILENO);
+        close(err_fd);
+    }
+}
