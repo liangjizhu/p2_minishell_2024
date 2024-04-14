@@ -35,76 +35,6 @@ void siginthandler(int param)
 	exit(0);
 }
 
-// myhistory function
-
-// mycalc function
-/*void mycalc(char **args) {
-    int x = atoi(args[1]);
-    int y = atoi(args[3]);
-    char *operator = args[2];
-
-    if (strcmp(operator, "add") == 0) {
-        printf("%d\n", x + y);
-    } else if (strcmp(operator, "mul") == 0) {
-        printf("%d\n", x * y);
-    } else if (strcmp(operator, "div") == 0) {
-        if (y != 0) {
-            printf("%d\n", x / y);
-        } else {
-            printf("Error: Division by zero\n");
-        }
-    } else {
-        printf("Invalid operation\n");
-    }
-}*/
-int acc = 0; // Variable global para mantener el acumulador para la suma.
-
-void mycalc(char* args) {
-    printf("ejecutando mycalc");
-    int op1, op2, result, remainder;
-    char* operator;
-
-    // Parse the input arguments
-    char *token = strtok(args, " ");
-    if (token == NULL) {
-        printf("[ERROR] The structure of the command is mycalc <operand 1> <add/mul/div> <operand 2>\n");
-        return;
-    }
-    op1 = atoi(token);
-
-    token = strtok(NULL, " ");
-    if (token == NULL) {
-        printf("[ERROR] The structure of the command is mycalc <operand 1> <add/mul/div> <operand 2>\n");
-        return;
-    }
-    operator = token;
-
-    token = strtok(NULL, " ");
-    if (token == NULL) {
-        printf("[ERROR] The structure of the command is mycalc <operand 1> <add/mul/div> <operand 2>\n");
-        return;
-    }
-    op2 = atoi(token);
-
-    if (strcmp(operator, "add") == 0) {
-        result = op1 + op2;
-        acc += result;
-        fprintf(stderr, "[OK] %d + %d = %d; Acc %d\n", op1, op2, result, acc);
-    } else if (strcmp(operator, "mul") == 0) {
-        result = op1 * op2;
-        fprintf(stderr, "[OK] %d * %d = %d\n", op1, op2, result);
-    } else if (strcmp(operator, "div") == 0) {
-        if (op2 == 0) {
-            printf("[ERROR] Division by zero is undefined.\n");
-            return;
-        }
-        result = op1 / op2;
-        remainder = op1 % op2;
-        fprintf(stderr, "[OK] %d / %d = %d; Remainder %d\n", op1, op2, result, remainder);
-    } else {
-        printf("[ERROR] The structure of the command is mycalc <operand 1> <add/mul/div> <operand 2>\n");
-    }
-}
 
 
 void execute_command_sequence(char ****argvv, int num_commands);
@@ -218,6 +148,76 @@ void getCompleteCommand(char*** argvv, int num_command) {
 /**
  * Main sheell  Loop  
  */
+ // myhistory function
+void myhistory(char **args) {
+    if (args[1] == NULL) {
+        // No se proporcionó un argumento, imprimir historial
+        int start = n_elem < history_size ? 0 : head;
+        int count = 0;
+        fprintf(stderr, "History of commands:\n");
+        for (int i = start; i < start + n_elem && count < history_size; i++, count++) {
+            int index = i % history_size;
+            fprintf(stderr, "%d ", count);
+            for (int j = 0; j < history[index].num_commands; j++) {
+                for (int k = 0; k < history[index].args[j]; k++) {
+                    fprintf(stderr, "%s ", history[index].argvv[j][k]);
+                }
+                if (j < history[index].num_commands - 1) {
+                    fprintf(stderr, "| ");
+                }
+            }
+            fprintf(stderr, "\n");
+        }
+    } else {
+        // Se proporcionó un argumento, intentar ejecutar ese comando del historial
+        int index = atoi(args[1]);
+        if (index < 0 || index >= n_elem || index >= history_size) {
+            fprintf(stdout, "ERROR: Command not found\n");
+        } else {
+            int real_index = (head + index) % history_size;
+            fprintf(stderr, "Running command %d\n", index);
+            // Re-ejecutar el comando como si fuera recién introducido
+            execvp(history[real_index].argvv[0][0], history[real_index].argvv[0]);
+            perror("execvp failed");
+        }
+    }
+}
+
+
+// mycalc function
+int acc = 0; // Variable global para mantener el acumulador para la suma.
+void mycalc(char **args) {
+    if (!args[1] || !args[2] || !args[3]) {
+        printf("[ERROR] The structure of the command is mycalc <operand 1> <add/mul/div> <operand 2>\n");
+        return;
+    }
+
+    int op1 = atoi(args[1]);
+    int op2 = atoi(args[3]);
+    char *operator = args[2];
+    int result, remainder;
+
+    if (strcmp(operator, "add") == 0) {
+        result = op1 + op2;
+        acc += result;
+        fprintf(stderr, "[OK] %d + %d = %d; Acc %d\n", op1, op2, result, acc);
+    } else if (strcmp(operator, "mul") == 0) {
+        result = op1 * op2;
+        fprintf(stderr, "[OK] %d * %d = %d\n", op1, op2, result);
+    } else if (strcmp(operator, "div") == 0) {
+        if (op2 == 0) {
+            printf("[ERROR] Division by zero is undefined.\n");
+            return;
+        }
+        result = op1 / op2;
+        remainder = op1 % op2;
+        fprintf(stderr, "[OK] %d / %d = %d; Remainder %d\n", op1, op2, result, remainder);
+    } else {
+        printf("[ERROR] Invalid operation\n");
+    }
+}
+
+
 int main(int argc, char* argv[])
 {
 	/**** Do not delete this code.****/
@@ -280,27 +280,31 @@ int main(int argc, char* argv[])
 		//************************************************************************************************
 
 		/************************ STUDENTS CODE ********************************/
-        char input[1024];
 
-        if (!fgets(input, sizeof(input), stdin)) {
+
+        if (strcmp(argvv[0][0], "mycalc") == 0) {
+            mycalc(argvv[0]); // Paso el primer arreglo de argumentos a mycalc
+            continue;
+        } else if (strcmp(argvv[0][0], "myhistory") == 0) {
+                myhistory(argvv[0]);
+                continue;
+        } else if (strcmp(argvv[0][0], "exit") == 0) {
             break;
         }
-        input[strcspn(input, "\n")] = 0; // Remueve el carácter de nueva línea
 
-        if (strncmp(input, "mycalc ", 7) == 0) {
-            mycalc(input + 7);
-            } else if (strcmp(input, "exit") == 0) {
-                break;
-            } else {
-                printf("[ERROR] Unknown command\n");
-                }
-        
 	    if (command_counter > 0) {
 			if (command_counter > MAX_COMMANDS){
 				printf("Error: Maximum number of commands is %d \n", MAX_COMMANDS);
 			}
             else {
                 // Print command
+                store_command(argvv, filev, in_background, &history[tail]);
+                tail = (tail + 1) % history_size;
+                if (n_elem < history_size) {
+                    n_elem++;
+                } else {
+                    head = (head + 1) % history_size; // Avanzar la cabeza si el buffer está lleno
+                }
                 print_command(argvv, filev, in_background);
             }
         }
@@ -344,9 +348,13 @@ int main(int argc, char* argv[])
         else{
             // 3. Execution of sequences of commands connected through pipes
             execute_command_sequence(&argvv, command_counter);
-        }        
-        
+        }
+                
     }
+        for (int i = 0; i < history_size; i++) {
+        free_command(&history[i]);
+    }
+    free(history);
 	return 0;
 };
 
