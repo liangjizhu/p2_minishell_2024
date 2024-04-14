@@ -320,10 +320,25 @@ int main(int argc, char* argv[])
             if (pid == 0) {
                 // 4. Execution of simple commands and sequence of commands with redirections (input, output
                 // and error) and in background.
-                if (filev){
-                    redirect_io(filev[0], filev[1], filev[2]);
-                }                
-                // Execute the command
+                /*if (filev[0][0] != '\0') {
+                redirect_io(filev[0], NULL, NULL);  // Redireccionar solo stdin
+                }
+                if (filev[1][0] != '\0') {
+                    redirect_io(NULL, filev[1], NULL);  // Redireccionar solo stdout
+                }
+                if (filev[2][0] != '\0') {
+                    redirect_io(NULL, NULL, filev[2]);  // Redireccionar solo stderr
+                }              
+                // Execute the command*/
+                if (filev[0][0] != '\0' && strcmp(filev[0], "0") != 0) {
+                    redirect_io(filev[0], NULL, NULL);
+                }
+                if (filev[1][0] != '\0' && strcmp(filev[1], "0") != 0) {
+                    redirect_io(NULL, filev[1], NULL);
+                }
+                if (filev[2][0] != '\0' && strcmp(filev[2], "0") != 0) {
+                    redirect_io(NULL, NULL, filev[2]);
+                }
                 execvp(argvv[0][0], argvv[0]);
                 // If execvp returns, an error occurred
                 perror("execvp error");
@@ -418,7 +433,7 @@ void execute_command_sequence(char ****argvv, int num_commands) {
 
 // 4. Execution of simple commands and sequence of commands with redirections (input, output
 // and error) and in background.
-void redirect_io(char *input_file, char *output_file, char *error_file) {
+/*void redirect_io(char *input_file, char *output_file, char *error_file) {
     if (input_file) {
         int in_fd = open(input_file, O_RDONLY);
         dup2(in_fd, STDIN_FILENO);
@@ -434,4 +449,29 @@ void redirect_io(char *input_file, char *output_file, char *error_file) {
         dup2(err_fd, STDERR_FILENO);
         close(err_fd);
     }
+}*/
+
+void redirect_io(char *input_file, char *output_file, char *error_file) {
+    if (input_file) {
+        int in_fd = open(input_file, O_RDONLY);
+        if (in_fd != -1) {
+            dup2(in_fd, STDIN_FILENO);
+            close(in_fd);
+        }
+    }
+    if (output_file) {
+        int out_fd = open(output_file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+        if (out_fd != -1) {
+            dup2(out_fd, STDOUT_FILENO);
+            close(out_fd);
+        }
+    }
+    if (error_file) {
+        int err_fd = open(error_file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+        if (err_fd != -1) {
+            dup2(err_fd, STDERR_FILENO);
+            close(err_fd);
+        }
+    }
 }
+
