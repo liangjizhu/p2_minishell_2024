@@ -38,7 +38,7 @@ void siginthandler(int param)
 // myhistory function
 
 // mycalc function
-void mycalc(char **args) {
+/*void mycalc(char **args) {
     int x = atoi(args[1]);
     int y = atoi(args[3]);
     char *operator = args[2];
@@ -56,7 +56,56 @@ void mycalc(char **args) {
     } else {
         printf("Invalid operation\n");
     }
+}*/
+int acc = 0; // Variable global para mantener el acumulador para la suma.
+
+void mycalc(char* args) {
+    printf("ejecutando mycalc")
+    int op1, op2, result, remainder;
+    char* operator;
+
+    // Parse the input arguments
+    char *token = strtok(args, " ");
+    if (token == NULL) {
+        printf("[ERROR] The structure of the command is mycalc <operand 1> <add/mul/div> <operand 2>\n");
+        return;
+    }
+    op1 = atoi(token);
+
+    token = strtok(NULL, " ");
+    if (token == NULL) {
+        printf("[ERROR] The structure of the command is mycalc <operand 1> <add/mul/div> <operand 2>\n");
+        return;
+    }
+    operator = token;
+
+    token = strtok(NULL, " ");
+    if (token == NULL) {
+        printf("[ERROR] The structure of the command is mycalc <operand 1> <add/mul/div> <operand 2>\n");
+        return;
+    }
+    op2 = atoi(token);
+
+    if (strcmp(operator, "add") == 0) {
+        result = op1 + op2;
+        acc += result;
+        fprintf(stderr, "[OK] %d + %d = %d; Acc %d\n", op1, op2, result, acc);
+    } else if (strcmp(operator, "mul") == 0) {
+        result = op1 * op2;
+        fprintf(stderr, "[OK] %d * %d = %d\n", op1, op2, result);
+    } else if (strcmp(operator, "div") == 0) {
+        if (op2 == 0) {
+            printf("[ERROR] Division by zero is undefined.\n");
+            return;
+        }
+        result = op1 / op2;
+        remainder = op1 % op2;
+        fprintf(stderr, "[OK] %d / %d = %d; Remainder %d\n", op1, op2, result, remainder);
+    } else {
+        printf("[ERROR] The structure of the command is mycalc <operand 1> <add/mul/div> <operand 2>\n");
+        }
 }
+
 
 void execute_command_sequence(char ****argvv, int num_commands);
 void redirect_io(char *input_file, char *output_file, char *error_file);
@@ -230,122 +279,21 @@ int main(int argc, char* argv[])
     }
 		//************************************************************************************************
 
-        /*
-		char input[1024];
-        char *commands[128];
-
-        while (1) {
-            printf("MSH>> ");
-            fflush(stdout);
-
-            if (!fgets(input, sizeof(input), stdin)) break; // Termina si se detecta EOF
-            input[strcspn(input, "\n")] = 0; // Remueve el carácter de nueva línea
-
-            bool runInBackground = 0;
-            if (input[strlen(input) - 1] == '&') {
-                runInBackground = 1;
-                input[strlen(input) - 1] = 0; // Elimina el '&' del final
-            }
-
-            int n_commands = 0;
-            commands[n_commands] = strtok(input, "|");
-            while (commands[n_commands] != NULL) {
-                n_commands++;
-                commands[n_commands] = strtok(NULL, "|");
-            }
-
-            int fd[2], in_fd = STDIN_FILENO;
-            for (int i = 0; i < n_commands; i++) {
-                if (i < n_commands - 1) { // No es el último comando, crea una tubería
-                    pipe(fd);
-                }
-
-
-                char *argv[128];
-                int argc = 0;
-
-                argv[argc] = strtok(commands[i], " ");
-                while (argv[argc] != NULL) {
-                    // Detén la búsqueda si encuentras símbolos de redirección
-                    if (strcmp(argv[argc], "<") == 0 || strcmp(argv[argc], ">") == 0 || strcmp(argv[argc], "!>") == 0) {
-                        break;
-                    }
-                    argc++;
-                    argv[argc] = strtok(NULL, " ");
-                }
-
-                pid_t pid = fork();
-
-                if (pid == 0) { // Proceso hijo
-                    // Aplica la redirección de entrada si es necesario
-                    if (in_fd != STDIN_FILENO) {
-                        dup2(in_fd, STDIN_FILENO);
-                        close(in_fd);
-                    }
-                    // Aplica la redirección de salida si no es el último comando
-                    if (i != n_commands - 1) {
-                        dup2(fd[1], STDOUT_FILENO);
-                        close(fd[1]);
-                    }
-
-                    // Manejo de redirecciones dentro del comando
-                    for (int i = 0; argv[i] != NULL; i++) {
-                        if (strcmp(argv[i], "<") == 0 && argv[i + 1] != NULL) {
-                            int fd = open(argv[i + 1], O_RDONLY);
-                            dup2(fd, STDIN_FILENO);
-                            close(fd);
-                        } else if (strcmp(argv[i], ">") == 0 && argv[i + 1] != NULL) {
-                            int fd = open(argv[i + 1], O_WRONLY | O_CREAT | O_TRUNC, 0644);
-                            dup2(fd, STDOUT_FILENO);
-                            close(fd);
-                        } else if (strcmp(argv[i], "!>") == 0 && argv[i + 1] != NULL) {
-                            int fd = open(argv[i + 1], O_WRONLY | O_CREAT | O_TRUNC, 0644);
-                            dup2(fd, STDERR_FILENO);
-                            close(fd);
-                        }
-                        argv[i] = NULL; // Elimina el resto de los argumentos después de la redirección
-                    }
-
-                    if (execvp(argv[0], argv) == -1) {
-                        perror("execvp");
-                        exit(EXIT_FAILURE);
-                    }
-
-                    close(fd[0]);
-                    close(fd[1]);
-
-                } 
-                else if (pid < 0) {
-                    perror("fork");
-                    exit(EXIT_FAILURE);
-                }
-
-                if (i != n_commands - 1) {
-                    close(fd[1]);
-                }
-
-                if (!runInBackground || i == n_commands - 1) {
-                    wait(NULL); // Espera al proceso hijo si no es en segundo plano o es el último comando
-                } else {
-                    printf("[PID] %d running in background\n", pid);
-                }
-
-                
-            }
-        
-            if (i < n_commands - 1) {
-            in_fd = fd[0];
-            } 
-            else {
-                // Si es el último comando, no hay necesidad de mantener el último in_fd abierto
-                if (in_fd != STDIN_FILENO) {
-                    close(in_fd);
-                }
-            }
-        } */
-
-
 		/************************ STUDENTS CODE ********************************/
+        char input[1024];
+        
+        if (!fgets(input, sizeof(input), stdin)) {
+            break;
+        }
+        input[strcspn(input, "\n")] = 0; // Remueve el carácter de nueva línea
+
+        if (strncmp(input, "mycalc ", 7) == 0) {
+            mycalc(input + 7);
+            } else if (strcmp(input, "exit") == 0) {
+                break;
+            } else {
+                printf("[ERROR] Unknown command\n");
+            }
         
 	    if (command_counter > 0) {
 			if (command_counter > MAX_COMMANDS){
@@ -362,7 +310,7 @@ int main(int argc, char* argv[])
         // 1. Execution of simple commands
 								// if there is only one single command, no pipes
         if (1 == command_counter)
-        {
+        {  
             pid_t pid = fork();
             // Child process
             if (pid == 0) {
@@ -473,7 +421,8 @@ int main(int argc, char* argv[])
         //     waitpid(pid3, NULL, 0);
 
         // }
-
+        
+        
     }
 	return 0;
 };
