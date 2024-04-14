@@ -188,7 +188,7 @@ void myhistory(char **args) {
 int acc = 0; // Variable global para mantener el acumulador para la suma.
 void mycalc(char **args) {
     if (!args[1] || !args[2] || !args[3]) {
-        printf("[ERROR] The structure of the command is mycalc <operand 1> <add/mul/div> <operand 2>\n");
+        printf("[ERROR] The structure of the command is mycalc <operand_1> <add/mul/div> <operand_2>\n");
         return;
     }
 
@@ -206,14 +206,14 @@ void mycalc(char **args) {
         fprintf(stderr, "[OK] %d * %d = %d\n", op1, op2, result);
     } else if (strcmp(operator, "div") == 0) {
         if (op2 == 0) {
-            printf("[ERROR] Division by zero is undefined.\n");
+            printf("[ERROR] Division by zero is not allowed.\n");
             return;
         }
         result = op1 / op2;
         remainder = op1 % op2;
         fprintf(stderr, "[OK] %d / %d = %d; Remainder %d\n", op1, op2, result, remainder);
     } else {
-        printf("[ERROR] The structure of the command is mycalc <operand 1> <add/mul/div> <operand 2>\n");
+        printf("[ERROR] The structure of the command is mycalc <operand_1> <add/mul/div> <operand_2>\n");
     }
 }
 
@@ -286,8 +286,8 @@ int main(int argc, char* argv[])
             mycalc(argvv[0]); // Paso el primer arreglo de argumentos a mycalc
             continue;
         } else if (strcmp(argvv[0][0], "myhistory") == 0) {
-                myhistory(argvv[0]);
-                continue;
+            myhistory(argvv[0]);
+            continue;
         } else if (strcmp(argvv[0][0], "exit") == 0) {
             break;
         }
@@ -305,7 +305,7 @@ int main(int argc, char* argv[])
                 } else {
                     head = (head + 1) % history_size; // Avanzar la cabeza si el buffer está lleno
                 }
-                print_command(argvv, filev, in_background);
+                //print_command(argvv, filev, in_background);
             }
         }
 
@@ -319,16 +319,7 @@ int main(int argc, char* argv[])
             // Child process
             if (pid == 0) {
                 // 4. Execution of simple commands and sequence of commands with redirections (input, output
-                // and error) and in background.
-                /*if (filev[0][0] != '\0') {
-                redirect_io(filev[0], NULL, NULL);  // Redireccionar solo stdin
-                }
-                if (filev[1][0] != '\0') {
-                    redirect_io(NULL, filev[1], NULL);  // Redireccionar solo stdout
-                }
-                if (filev[2][0] != '\0') {
-                    redirect_io(NULL, NULL, filev[2]);  // Redireccionar solo stderr
-                }              
+                // and error) and in background.         
                 // Execute the command*/
                 if (filev[0][0] != '\0' && strcmp(filev[0], "0") != 0) {
                     redirect_io(filev[0], NULL, NULL);
