@@ -430,33 +430,41 @@ void execute_command_sequence(char ****argvv, int num_commands) {
 
 // redirections
 void redirect_io(char *input_file, char *output_file, char *error_file) {
-    if (input_file && input_file[0] != '\0') {
-        int in_fd = open(input_file, O_RDONLY);
-        if (in_fd != -1) {
-            dup2(in_fd, STDIN_FILENO);
-            close(in_fd);
-        } else {
-            perror("open input file");
+    if (input_file && *input_file) {
+        int fd = open(input_file, O_RDONLY);
+        if (fd == -1) {
+            perror("Failed to open input file");
+            exit(EXIT_FAILURE);
         }
+        if (dup2(fd, STDIN_FILENO) == -1) {
+            perror("Failed to redirect standard input");
+            exit(EXIT_FAILURE);
+        }
+        close(fd);
     }
-    if (output_file && output_file[0] != '\0') {
-        int out_fd = open(output_file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-        if (out_fd != -1) {
-            dup2(out_fd, STDOUT_FILENO);
-            close(out_fd);
-        } else {
-            perror("open output file");
+    if (output_file && *output_file) {
+        int fd = open(output_file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+        if (fd == -1) {
+            perror("Failed to open output file");
+            exit(EXIT_FAILURE);
         }
+        if (dup2(fd, STDOUT_FILENO) == -1) {
+            perror("Failed to redirect standard output");
+            exit(EXIT_FAILURE);
+        }
+        close(fd);
     }
-    // Only redirect STDERR if a specific error file is provided
-    if (error_file && error_file[0] != '\0') {
-        int err_fd = open(error_file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-        if (err_fd != -1) {
-            dup2(err_fd, STDERR_FILENO);
-            close(err_fd);
-        } else {
-            perror("open error file");
+    if (error_file && *error_file) {
+        int fd = open(error_file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+        if (fd == -1) {
+            perror("Failed to open error file");
+            exit(EXIT_FAILURE);
         }
+        if (dup2(fd, STDERR_FILENO) == -1) {
+            perror("Failed to redirect standard error");
+            exit(EXIT_FAILURE);
+        }
+        close(fd);
     }
 }
 
@@ -543,20 +551,15 @@ void mycalc(char **args) {
     char *operator = args[2];
     int result, remainder;
 
-<<<<<<< HEAD
     // Read the current value of acc from the environment variable
     char *acc_env = getenv("Acc");
     int acc = (acc_env) ? atoi(acc_env) : 0;
 
-=======
->>>>>>> 00bbbf9 (???)
     if (strcmp(operator, "add") == 0) {
         result = op1 + op2;
         acc += result;
-        fprintf(stderr, "[OK] %d + %d = %d; Acc %d\n", op1, op2, result, acc);
     } else if (strcmp(operator, "mul") == 0) {
         result = op1 * op2;
-        fprintf(stderr, "[OK] %d * %d = %d\n", op1, op2, result);
     } else if (strcmp(operator, "div") == 0) {
         if (op2 == 0) {
             printf("[ERROR] Division by zero is not allowed.\n");
@@ -565,9 +568,9 @@ void mycalc(char **args) {
         result = op1 / op2;
         remainder = op1 % op2;
         fprintf(stderr, "[OK] %d / %d = %d; Remainder %d\n", op1, op2, result, remainder);
+        return;
     } else {
         printf("[ERROR] The structure of the command is mycalc <operand_1> <add/mul/div> <operand_2>\n");
-<<<<<<< HEAD
         return;
     }
 
@@ -582,8 +585,6 @@ void mycalc(char **args) {
     } else{
         fprintf(stderr, "[OK] %d * %d = %d\n", op1, op2, result);
 
-=======
->>>>>>> 00bbbf9 (???)
     }
 }
 
@@ -591,14 +592,10 @@ void mycalc(char **args) {
 // 5.2 myhistory function
 void myhistory(char **args) {
     if (args[1] == NULL) {
-<<<<<<< HEAD
         // Print the historial
-=======
-        // No se proporcionó un argumento, imprimir historial
->>>>>>> 00bbbf9 (???)
         int start = n_elem < history_size ? 0 : head;
         int count = 0;
-        // fprintf(stderr, "History of commands:\n");
+
         for (int i = start; i < start + n_elem && count < history_size; i++, count++) {
             int index = i % history_size;
             fprintf(stderr, "%d ", count);
@@ -613,18 +610,13 @@ void myhistory(char **args) {
             fprintf(stderr, "\n");
         }
     } else {
-<<<<<<< HEAD
         // Execute a command from the historial
-=======
-        // Se proporcionó un argumento, intentar ejecutar ese comando del historial
->>>>>>> 00bbbf9 (???)
         int index = atoi(args[1]);
         if (index < 0 || index >= n_elem || index >= history_size) {
             fprintf(stdout, "ERROR: Command not found\n");
         } else {
             int real_index = (head + index) % history_size;
             fprintf(stderr, "Running command %d\n", index);
-<<<<<<< HEAD
             
             pid_t pid = fork();
             if (pid == 0) { // Child process
@@ -639,13 +631,3 @@ void myhistory(char **args) {
         }
     }
 }
-
-
-=======
-            // Re-ejecutar el comando como si fuera recién introducido
-            execvp(history[real_index].argvv[0][0], history[real_index].argvv[0]);
-            perror("execvp failed");
-        }
-    }
-}
->>>>>>> 00bbbf9 (???)
