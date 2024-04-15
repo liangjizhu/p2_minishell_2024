@@ -242,7 +242,7 @@ int main(int argc, char* argv[])
             continue;
         } else if (strcmp(argvv[0][0], "exit") == 0) {
             break;
-        }
+        }
 
 	    if (command_counter > 0) {
 			if (command_counter > MAX_COMMANDS){
