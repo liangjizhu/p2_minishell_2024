@@ -359,64 +359,6 @@ void execute_single_command_redirection(char ***argvv, char filev[3][64], int in
 
 
 // 3. Execution of sequences of commands connected through pipes
-/*
-void execute_command_sequence(char ****argvv, int num_commands) {
-    int num_pipes = num_commands - 1;
-    int pipe_fds[2 * num_pipes];
-
-    // Create all necessary pipes
-    for (int i = 0; i < num_pipes; i++) {
-        if (pipe(pipe_fds + i * 2) == -1) {
-            perror("pipe");
-            exit(EXIT_FAILURE);
-        }
-    }
-
-    // Execute each command
-    for (int i = 0; i < num_commands; i++) {
-        pid_t pid = fork();
-        if (pid == 0) { // Child process
-            // If not the first command, get input from the previous pipe
-            if (i != 0) {
-                if (dup2(pipe_fds[(i - 1) * 2], STDIN_FILENO) == -1) {
-                    perror("dup2");
-                    exit(EXIT_FAILURE);
-                }
-            }
-            // If not the last command, output to the next pipe
-            if (i != num_commands - 1) {
-                if (dup2(pipe_fds[i * 2 + 1], STDOUT_FILENO) == -1) {
-                    perror("dup2");
-                    exit(EXIT_FAILURE);
-                }
-            }
-
-            // Close all pipes (very important! prevents hanging)
-            for (int j = 0; j < 2 * num_pipes; j++) {
-                close(pipe_fds[j]);
-            }
-
-            // Execute the command
-            execvp((*argvv)[i][0], (*argvv)[i]);
-            perror("execvp");
-            exit(EXIT_FAILURE);
-        } else if (pid < 0) {
-            perror("fork");
-            exit(EXIT_FAILURE);
-        }
-    }
-
-    // Parent closes all pipes
-    for (int i = 0; i < 2 * num_pipes; i++) {
-        close(pipe_fds[i]);
-    }
-
-    // Parent waits for all child processes to complete
-    for (int i = 0; i < num_commands; i++) {
-        wait(NULL);
-    }
-}*/
-
 void execute_command_sequence(char ****argvv, int num_commands) {
     int num_pipes = num_commands - 1;
     int pipe_fds[2 * num_pipes];
@@ -509,7 +451,6 @@ void redirect_io(char *input_file, char *output_file, char *error_file) {
 
 
 // 3. Execution of sequences of commands connected through pipes with redirection
-// Execute a sequence of commands with redirection and pipes
 // Execute a sequence of commands with redirection and pipes
 void execute_command_sequence_with_redirection(char ****argvv, char filev[3][64], int num_commands) {
     int num_pipes = num_commands - 1;
@@ -612,7 +553,7 @@ void mycalc(char **args) {
 }
 
 
- // 5.2 myhistory function
+// 5.2 myhistory function
 void myhistory(char **args) {
     if (args[1] == NULL) {
         // No se proporcionó un argumento, imprimir historial
