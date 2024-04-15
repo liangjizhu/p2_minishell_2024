@@ -35,8 +35,8 @@ void siginthandler(int param)
 	exit(0);
 }
 
-// functions
-// 1 and 2. Execution of simple commands and if in background
+// functions:
+// 1. and 2. Execution of simple commands and if in background
 void execute_single_command(char ***argvv, int in_background);
 
 // 3. Execution of sequences of commands connected through pipes
@@ -210,24 +210,24 @@ int main(int argc, char* argv[])
 		signal(SIGINT, siginthandler);
 
 		if (run_history)
-    {
-        run_history=0;
-    }
-    else{
-        // Prompt 
-        write(STDERR_FILENO, "MSH>>", strlen("MSH>>"));
-
-        // Get command
-        //********** DO NOT MODIFY THIS PART. IT DISTINGUISH BETWEEN NORMAL/CORRECTION MODE***************
-        executed_cmd_lines++;
-        if( end != 0 && executed_cmd_lines < end) {
-            command_counter = read_command_correction(&argvv, filev, &in_background, cmd_lines[executed_cmd_lines]);
+        {
+            run_history=0;
         }
-        else if( end != 0 && executed_cmd_lines == end)
-            return 0;
-        else
-            command_counter = read_command(&argvv, filev, &in_background); //NORMAL MODE
-    }
+        else{
+            // Prompt 
+            write(STDERR_FILENO, "MSH>>", strlen("MSH>>"));
+
+            // Get command
+            //********** DO NOT MODIFY THIS PART. IT DISTINGUISH BETWEEN NORMAL/CORRECTION MODE***************
+            executed_cmd_lines++;
+            if( end != 0 && executed_cmd_lines < end) {
+                command_counter = read_command_correction(&argvv, filev, &in_background, cmd_lines[executed_cmd_lines]);
+            }
+            else if( end != 0 && executed_cmd_lines == end)
+                return 0;
+            else
+                command_counter = read_command(&argvv, filev, &in_background); //NORMAL MODE
+        }
 		//************************************************************************************************
 
 		/************************ STUDENTS CODE ********************************/
@@ -253,7 +253,8 @@ int main(int argc, char* argv[])
                 // Print command
                 store_command(argvv, filev, in_background, &history[tail]);
                 tail = (tail + 1) % history_size;
-                if (n_elem < history_size) {
+                if (n_elem < history_size) 
+                {
                     n_elem++;
                 } else {
                     head = (head + 1) % history_size; // Avanzar la cabeza si el buffer está lleno
@@ -262,12 +263,13 @@ int main(int argc, char* argv[])
             }
         }
 
-        bool hasRedirection = false;
+        bool redirection = false;
 
         // Check if there's any redirection specified (not empty and not "0")
         for (int i = 0; i < 3; i++) {
-            if (filev[i][0] != '\0' && strcmp(filev[i], "0") != 0) {
-                hasRedirection = true;
+            if (filev[i][0] != '\0' && strcmp(filev[i], "0") != 0) 
+            {
+                redirection = true;
                 break;
             }
         }
@@ -277,24 +279,30 @@ int main(int argc, char* argv[])
 		// if there is only one single command, no pipes
         if (1 == command_counter)
         {
-            if (hasRedirection){
+            if (redirection)
+            {
                 execute_single_command_redirection(argvv, filev, in_background);
-            }
-            else{
+            } 
+            else 
+            {
                 execute_single_command(argvv, in_background);
             }
         }
-        else{
+        else
+        {
             // 3. Execution of sequences of commands connected through pipes
-            if (hasRedirection) {
+            if (redirection) 
+            {
                 execute_command_sequence_with_redirection(&argvv, filev, command_counter);
-            } else {
+            } 
+            else 
+            {
                 execute_command_sequence(&argvv, command_counter);
             }
         }
                 
     }
-        for (int i = 0; i < history_size; i++) {
+    for (int i = 0; i < history_size; i++) {
         free_command(&history[i]);
     }
     free(history);
@@ -307,26 +315,33 @@ int main(int argc, char* argv[])
 void execute_single_command(char ***argvv, int in_background) {
     pid_t pid = fork();
     
-    if (pid == 0) {                     
-        // Child process
-        execvp(argvv[0][0], argvv[0]); // Execute the command
+    // Child process
+    if (pid == 0) 
+    {              
+        // Execute the command       
+        execvp(argvv[0][0], argvv[0]);
+
         // If execvp returns, an error occurred
         perror("execvp error");
         exit(EXIT_FAILURE);
-    // Parent process
     }
-    else if (pid > 0) { 
-        if (!in_background) {
+    // Parent process
+    else if (pid > 0) 
+    { 
+        if (!in_background) 
+        {
             // Wait for the child process to finish
             waitpid(pid, NULL, 0);
         }
-        else {
+        else 
+        {
             // 2. single command in background running (parent) 
             printf("Process %d running in background\n", pid);
         }
-    } 
-    else {
-        // Handle fork failure
+    }
+    // Handle fork failure
+    else 
+    {
         perror("fork error");
     }
 }
@@ -334,8 +349,10 @@ void execute_single_command(char ***argvv, int in_background) {
 // 4.1 Execution of simple commands with redirections
 void execute_single_command_redirection(char ***argvv, char filev[3][64], int in_background) {
     pid_t pid = fork();
-
-    if (pid == 0) { // Child process
+    
+    // Child process
+    if (pid == 0) 
+    { 
         // Apply redirections
         if (filev[0][0] != '\0' && strcmp(filev[0], "0") != 0) {
             redirect_io(filev[0], NULL, NULL);
@@ -346,23 +363,28 @@ void execute_single_command_redirection(char ***argvv, char filev[3][64], int in
         if (filev[2][0] != '\0' && strcmp(filev[2], "0") != 0) {
             redirect_io(NULL, NULL, filev[2]);
         }
-
+        // Execute the command       
         execvp(argvv[0][0], argvv[0]);
-        perror("execvp error"); // Only runs if execvp fails
+        // If execvp returns, an error occurred
+        perror("execvp error");
         exit(EXIT_FAILURE);
-    // Parent process
     }
-    else if (pid > 0) { 
-        if (!in_background) {
+    // Parent process
+    else if (pid > 0) 
+    { 
+        if (!in_background) 
+        {
             // Wait for the child process to finish
             waitpid(pid, NULL, 0);
         }
-        else {
+        else 
+        {
             // 2. single command in background running (parent) 
             printf("Process %d running in background\n", pid);
         }
     } 
-    else {
+    else 
+    {
         // Handle fork failure
         perror("fork error");
     }
@@ -376,7 +398,8 @@ void execute_command_sequence(char ****argvv, int num_commands) {
 
     // Create all necessary pipes
     for (int i = 0; i < num_pipes; i++) {
-        if (pipe(pipe_fds + i * 2) == -1) {
+        if (pipe(pipe_fds + i * 2) == -1) 
+        {
             perror("pipe");
             exit(EXIT_FAILURE);
         }
@@ -486,32 +509,26 @@ void execute_command_sequence_with_redirection(char ****argvv, char filev[3][64]
     for (int i = 0; i < num_commands; i++) {
         pid_t pid = fork();
         if (pid == 0) { // Child process
-            // Handle input redirection from the previous pipe or file
+            // Redirect input if not the first command
             if (i != 0) {
-                dup2(pipe_fds[(i - 1) * 2], STDIN_FILENO); // Standard input from previous command
-            } else {
-                // Apply input redirection if specified for the first command
-                if (filev[0][0] != '\0') {
-                    redirect_io(filev[0], NULL, NULL);
-                }
+                dup2(pipe_fds[(i - 1) * 2], STDIN_FILENO);
+            } else if (filev[0][0] != '\0' && strcmp(filev[0], "0") != 0) { // Input redirection for the first command
+                redirect_io(filev[0], NULL, NULL);
             }
 
-            // Handle output redirection to the next pipe or file
+            // Redirect output if not the last command
             if (i != num_commands - 1) {
-                dup2(pipe_fds[i * 2 + 1], STDOUT_FILENO); // Standard output to next command
-            } else {
-                // Apply output redirection if specified for the last command
-                if (filev[1][0] != '\0') {
-                    redirect_io(NULL, filev[1], NULL);
-                }
+                dup2(pipe_fds[i * 2 + 1], STDOUT_FILENO);
+            } else if (filev[1][0] != '\0' && strcmp(filev[1], "0") != 0) { // Output redirection for the last command
+                redirect_io(NULL, filev[1], NULL);
             }
 
-            // Handle error redirection if specified
-            if (filev[2][0] != '\0') {
+            // Error redirection for each command if specified
+            if (filev[2][0] != '\0' && strcmp(filev[2], "0") != 0) {
                 redirect_io(NULL, NULL, filev[2]);
             }
 
-            // Close all pipes in the child process to prevent hanging
+            // Close all pipes in the child to prevent hanging
             for (int j = 0; j < 2 * num_pipes; j++) {
                 close(pipe_fds[j]);
             }
@@ -526,12 +543,12 @@ void execute_command_sequence_with_redirection(char ****argvv, char filev[3][64]
         }
     }
 
-    // Parent closes all pipes
+    // Close all pipes in the parent
     for (int i = 0; i < 2 * num_pipes; i++) {
         close(pipe_fds[i]);
     }
 
-    // Parent waits for all child processes to complete
+    // Wait for all child processes to complete
     for (int i = 0; i < num_commands; i++) {
         wait(NULL);
     }
