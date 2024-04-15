@@ -231,15 +231,18 @@ int main(int argc, char* argv[])
 
 		/************************ STUDENTS CODE ********************************/
 
+        // Check for mycalc and myhistory functions
         if (strcmp(argvv[0][0], "mycalc") == 0) {
-            mycalc(argvv[0]); // Paso el primer arreglo de argumentos a mycalc
+            // 5.1 mycalc function
+            mycalc(argvv[0]);
             continue;
         } else if (strcmp(argvv[0][0], "myhistory") == 0) {
+            // 5.2 myhistory function
             myhistory(argvv[0]);
             continue;
         } else if (strcmp(argvv[0][0], "exit") == 0) {
             break;
-        }
+        }
 
 	    if (command_counter > 0) {
 			if (command_counter > MAX_COMMANDS){
@@ -527,7 +530,6 @@ void execute_command_sequence_with_redirection(char ****argvv, char filev[3][64]
 
 
 
-
 // 5.1 mycalc function
 void mycalc(char **args) {
     if (!args[1] || !args[2] || !args[3]) {
@@ -540,7 +542,7 @@ void mycalc(char **args) {
     char *operator = args[2];
     int result, remainder;
 
-    // Leer el valor actual del acumulador desde la variable de entorno
+    // Read the current value of acc from the environment variable
     char *acc_env = getenv("Acc");
     int acc = (acc_env) ? atoi(acc_env) : 0;
 
@@ -563,12 +565,12 @@ void mycalc(char **args) {
         return;
     }
 
-    // Actualizar la variable de entorno Acc con el nuevo valor
+    // Update the Acc environment variable with the new value
     char acc_str[20];
-    sprintf(acc_str, "%d", acc); // Convertir acc a cadena
-    setenv("Acc", acc_str, 1); // Establecer la variable de entorno Acc
+    sprintf(acc_str, "%d", acc); // Convert acc to string
+    setenv("Acc", acc_str, 1); // Set the acc enviroment variable
 
-    // Imprimir resultado
+    // Print the result
     if (strcmp(operator, "add") == 0){
         fprintf(stderr, "[OK] %d + %d = %d; Acc %d\n", op1,  op2, result, acc);
     } else{
@@ -578,10 +580,10 @@ void mycalc(char **args) {
 }
 
 
- // 5.2 myhistory function
+// 5.2 myhistory function
 void myhistory(char **args) {
     if (args[1] == NULL) {
-        // Imprimir historial
+        // Print the historial
         int start = n_elem < history_size ? 0 : head;
         int count = 0;
 
@@ -599,7 +601,7 @@ void myhistory(char **args) {
             fprintf(stderr, "\n");
         }
     } else {
-        // Ejecutar un comando del historial
+        // Execute a command from the historial
         int index = atoi(args[1]);
         if (index < 0 || index >= n_elem || index >= history_size) {
             fprintf(stdout, "ERROR: Command not found\n");
@@ -608,16 +610,17 @@ void myhistory(char **args) {
             fprintf(stderr, "Running command %d\n", index);
             
             pid_t pid = fork();
-            if (pid == 0) { // Proceso hijo
+            if (pid == 0) { // Child process
                 execvp(history[real_index].argvv[0][0], history[real_index].argvv[0]);
                 perror("execvp failed");
-                exit(EXIT_FAILURE); // Salir si falla execvp
-            } else if (pid > 0) { // Proceso padre
-                wait(NULL); // Esperar a que el hijo termine
+                exit(EXIT_FAILURE); // Exit if excvp fails
+            } else if (pid > 0) { // Parent process
+                wait(NULL); // Wait until child ends
             } else {
                 perror("fork failed");
             }
         }
     }
 }
+
 
