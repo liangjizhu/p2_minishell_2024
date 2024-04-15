@@ -52,7 +52,6 @@ void execute_command_sequence_with_redirection(char ****argvv, char filev[3][64]
 void redirect_io(char *input_file, char *output_file, char *error_file);
 
 // 5.1 mycalc function
-int acc = 0; // Variable global para mantener el acumulador para la suma.
 void mycalc(char **args);
 
  // 5.2 myhistory function
@@ -529,6 +528,7 @@ void execute_command_sequence_with_redirection(char ****argvv, char filev[3][64]
 
 
 
+
 // 5.1 mycalc function
 void mycalc(char **args) {
     if (!args[1] || !args[2] || !args[3]) {
@@ -541,13 +541,15 @@ void mycalc(char **args) {
     char *operator = args[2];
     int result, remainder;
 
+    // Leer el valor actual del acumulador desde la variable de entorno
+    char *acc_env = getenv("Acc");
+    int acc = (acc_env) ? atoi(acc_env) : 0;
+
     if (strcmp(operator, "add") == 0) {
         result = op1 + op2;
         acc += result;
-        fprintf(stderr, "[OK] %d + %d = %d; Acc %d\n", op1, op2, result, acc);
     } else if (strcmp(operator, "mul") == 0) {
         result = op1 * op2;
-        fprintf(stderr, "[OK] %d * %d = %d\n", op1, op2, result);
     } else if (strcmp(operator, "div") == 0) {
         if (op2 == 0) {
             printf("[ERROR] Division by zero is not allowed.\n");
@@ -556,8 +558,23 @@ void mycalc(char **args) {
         result = op1 / op2;
         remainder = op1 % op2;
         fprintf(stderr, "[OK] %d / %d = %d; Remainder %d\n", op1, op2, result, remainder);
+        return;
     } else {
         printf("[ERROR] The structure of the command is mycalc <operand_1> <add/mul/div> <operand_2>\n");
+        return;
+    }
+
+    // Actualizar la variable de entorno Acc con el nuevo valor
+    char acc_str[20];
+    sprintf(acc_str, "%d", acc); // Convertir acc a cadena
+    setenv("Acc", acc_str, 1); // Establecer la variable de entorno Acc
+
+    // Imprimir resultado
+    if (strcmp(operator, "add") == 0){
+        fprintf(stderr, "[OK] %d + %d = %d; Acc %d\n", op1,  op2, result, acc);
+    } else{
+        fprintf(stderr, "[OK] %d * %d = %d\n", op1, op2, result);
+
     }
 }
 
@@ -565,10 +582,10 @@ void mycalc(char **args) {
 // 5.2 myhistory function
 void myhistory(char **args) {
     if (args[1] == NULL) {
-        // No se proporcionó un argumento, imprimir historial
+        // Imprimir historial
         int start = n_elem < history_size ? 0 : head;
         int count = 0;
-        // fprintf(stderr, "History of commands:\n");
+
         for (int i = start; i < start + n_elem && count < history_size; i++, count++) {
             int index = i % history_size;
             fprintf(stderr, "%d ", count);
@@ -583,16 +600,25 @@ void myhistory(char **args) {
             fprintf(stderr, "\n");
         }
     } else {
-        // Se proporcionó un argumento, intentar ejecutar ese comando del historial
+        // Ejecutar un comando del historial
         int index = atoi(args[1]);
         if (index < 0 || index >= n_elem || index >= history_size) {
             fprintf(stdout, "ERROR: Command not found\n");
         } else {
             int real_index = (head + index) % history_size;
             fprintf(stderr, "Running command %d\n", index);
-            // Re-ejecutar el comando como si fuera recién introducido
-            execvp(history[real_index].argvv[0][0], history[real_index].argvv[0]);
-            perror("execvp failed");
+            
+            pid_t pid = fork();
+            if (pid == 0) { // Proceso hijo
+                execvp(history[real_index].argvv[0][0], history[real_index].argvv[0]);
+                perror("execvp failed");
+                exit(EXIT_FAILURE); // Salir si falla execvp
+            } else if (pid > 0) { // Proceso padre
+                wait(NULL); // Esperar a que el hijo termine
+            } else {
+                perror("fork failed");
+            }
         }
     }
 }
+
