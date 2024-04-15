@@ -35,16 +35,17 @@ void siginthandler(int param)
 	exit(0);
 }
 
-// 1. Execution of simple commands
+// functions
+// 1 and 2. Execution of simple commands and if in background
 void execute_single_command(char ***argvv, int in_background);
-
-// 4. Execution of simple commands with redirections
-void execute_single_command_redirection(char ***argvv, char filev[3][64], int in_background);
 
 // 3. Execution of sequences of commands connected through pipes
 void execute_command_sequence(char ****argvv, int num_commands);
 
-// 3. Execution of sequences of commands connected through pipes with redirection
+// 4.1 Execution of simple commands with redirections
+void execute_single_command_redirection(char ***argvv, char filev[3][64], int in_background);
+
+// 4.2 Execution of sequences of commands connected through pipes with redirection
 void execute_command_sequence_with_redirection(char ****argvv, char filev[3][64], int num_commands);
 
 // file redirections
@@ -449,6 +450,8 @@ void redirect_io(char *input_file, char *output_file, char *error_file) {
 
 
 // 3. Execution of sequences of commands connected through pipes with redirection
+// Execute a sequence of commands with redirection and pipes
+// Execute a sequence of commands with redirection and pipes
 void execute_command_sequence_with_redirection(char ****argvv, char filev[3][64], int num_commands) {
     int num_pipes = num_commands - 1;
     int pipe_fds[2 * num_pipes];
@@ -461,45 +464,32 @@ void execute_command_sequence_with_redirection(char ****argvv, char filev[3][64]
         }
     }
 
-    // Execute each command with handling for redirection
     for (int i = 0; i < num_commands; i++) {
         pid_t pid = fork();
         if (pid == 0) { // Child process
             // Handle input redirection from the previous pipe or file
             if (i != 0) {
                 dup2(pipe_fds[(i - 1) * 2], STDIN_FILENO); // Standard input from previous command
-            } else if (filev[0][0] != '\0') {
-                int fd_in = open(filev[0], O_RDONLY);
-                if (fd_in == -1) {
-                    perror("open input");
-                    exit(EXIT_FAILURE);
+            } else {
+                // Apply input redirection if specified for the first command
+                if (filev[0][0] != '\0') {
+                    redirect_io(filev[0], NULL, NULL);
                 }
-                dup2(fd_in, STDIN_FILENO);
-                close(fd_in);
             }
 
             // Handle output redirection to the next pipe or file
             if (i != num_commands - 1) {
                 dup2(pipe_fds[i * 2 + 1], STDOUT_FILENO); // Standard output to next command
-            } else if (filev[1][0] != '\0') {
-                int fd_out = open(filev[1], O_WRONLY | O_CREAT | O_TRUNC, 0644);
-                if (fd_out == -1) {
-                    perror("open output");
-                    exit(EXIT_FAILURE);
+            } else {
+                // Apply output redirection if specified for the last command
+                if (filev[1][0] != '\0') {
+                    redirect_io(NULL, filev[1], NULL);
                 }
-                dup2(fd_out, STDOUT_FILENO);
-                close(fd_out);
             }
 
             // Handle error redirection if specified
             if (filev[2][0] != '\0') {
-                int fd_err = open(filev[2], O_WRONLY | O_CREAT | O_TRUNC, 0644);
-                if (fd_err == -1) {
-                    perror("open error");
-                    exit(EXIT_FAILURE);
-                }
-                dup2(fd_err, STDERR_FILENO);
-                close(fd_err);
+                redirect_io(NULL, NULL, filev[2]);
             }
 
             // Close all pipes in the child process to prevent hanging
@@ -527,6 +517,7 @@ void execute_command_sequence_with_redirection(char ****argvv, char filev[3][64]
         wait(NULL);
     }
 }
+
 
 
 // 5.1 mycalc function
