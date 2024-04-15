@@ -53,6 +53,7 @@ void redirect_io(char *input_file, char *output_file, char *error_file);
 // 5.1 mycalc function
 int acc = 0; // Variable global para mantener el acumulador para la suma.
 void mycalc(char **args);
+
  // 5.2 myhistory function
 void myhistory(char **args);
 
