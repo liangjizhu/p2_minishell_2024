@@ -425,6 +425,7 @@ void execute_command_sequence(char ****argvv, int num_commands) {
 }
 
 
+
 // redirections
 void redirect_io(char *input_file, char *output_file, char *error_file) {
     if (input_file && input_file[0] != '\0') {
@@ -561,7 +562,7 @@ void mycalc(char **args) {
 }
 
 
- // 5.2 myhistory function
+// 5.2 myhistory function
 void myhistory(char **args) {
     if (args[1] == NULL) {
         // No se proporcionó un argumento, imprimir historial
