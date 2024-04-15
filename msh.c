@@ -35,11 +35,29 @@ void siginthandler(int param)
 	exit(0);
 }
 
+// 1. Execution of simple commands
+void execute_single_command(char ***argvv, int in_background);
 
+// 4. Execution of simple commands with redirections
+void execute_single_command_redirection(char ***argvv, char filev[3][64], int in_background);
 
+// 3. Execution of sequences of commands connected through pipes
 void execute_command_sequence(char ****argvv, int num_commands);
-void execute_command_sequence_with_redirection(char ****argvv, int num_commands, char filev[3][64]);
+
+// 3. Execution of sequences of commands connected through pipes with redirection
+void execute_command_sequence_with_redirection(char ****argvv, char filev[3][64], int num_commands);
+
+// file redirections
 void redirect_io(char *input_file, char *output_file, char *error_file);
+
+// 5.1 mycalc function
+int acc = 0; // Variable global para mantener el acumulador para la suma.
+void mycalc(char **args);
+ // 5.2 myhistory function
+void myhistory(char **args);
+
+
+
 
 // command structure
 struct command
@@ -149,76 +167,6 @@ void getCompleteCommand(char*** argvv, int num_command) {
 /**
  * Main sheell  Loop  
  */
- // myhistory function
-void myhistory(char **args) {
-    if (args[1] == NULL) {
-        // No se proporcionó un argumento, imprimir historial
-        int start = n_elem < history_size ? 0 : head;
-        int count = 0;
-        // fprintf(stderr, "History of commands:\n");
-        for (int i = start; i < start + n_elem && count < history_size; i++, count++) {
-            int index = i % history_size;
-            fprintf(stderr, "%d ", count);
-            for (int j = 0; j < history[index].num_commands; j++) {
-                for (int k = 0; k < history[index].args[j]; k++) {
-                    fprintf(stderr, "%s ", history[index].argvv[j][k]);
-                }
-                if (j < history[index].num_commands - 1) {
-                    fprintf(stderr, "| ");
-                }
-            }
-            fprintf(stderr, "\n");
-        }
-    } else {
-        // Se proporcionó un argumento, intentar ejecutar ese comando del historial
-        int index = atoi(args[1]);
-        if (index < 0 || index >= n_elem || index >= history_size) {
-            fprintf(stdout, "ERROR: Command not found\n");
-        } else {
-            int real_index = (head + index) % history_size;
-            fprintf(stderr, "Running command %d\n", index);
-            // Re-ejecutar el comando como si fuera recién introducido
-            execvp(history[real_index].argvv[0][0], history[real_index].argvv[0]);
-            perror("execvp failed");
-        }
-    }
-}
-
-
-// mycalc function
-int acc = 0; // Variable global para mantener el acumulador para la suma.
-void mycalc(char **args) {
-    if (!args[1] || !args[2] || !args[3]) {
-        printf("[ERROR] The structure of the command is mycalc <operand_1> <add/mul/div> <operand_2>\n");
-        return;
-    }
-
-    int op1 = atoi(args[1]);
-    int op2 = atoi(args[3]);
-    char *operator = args[2];
-    int result, remainder;
-
-    if (strcmp(operator, "add") == 0) {
-        result = op1 + op2;
-        acc += result;
-        fprintf(stderr, "[OK] %d + %d = %d; Acc %d\n", op1, op2, result, acc);
-    } else if (strcmp(operator, "mul") == 0) {
-        result = op1 * op2;
-        fprintf(stderr, "[OK] %d * %d = %d\n", op1, op2, result);
-    } else if (strcmp(operator, "div") == 0) {
-        if (op2 == 0) {
-            printf("[ERROR] Division by zero is not allowed.\n");
-            return;
-        }
-        result = op1 / op2;
-        remainder = op1 % op2;
-        fprintf(stderr, "[OK] %d / %d = %d; Remainder %d\n", op1, op2, result, remainder);
-    } else {
-        printf("[ERROR] The structure of the command is mycalc <operand_1> <add/mul/div> <operand_2>\n");
-    }
-}
-
-
 int main(int argc, char* argv[])
 {
 	/**** Do not delete this code.****/
@@ -282,16 +230,6 @@ int main(int argc, char* argv[])
 
 		/************************ STUDENTS CODE ********************************/
 
-        // if (command_counter > 0) {
-		// 	if (command_counter > MAX_COMMANDS){
-		// 		printf("Error: Maximum number of commands is %d \n", MAX_COMMANDS);
-		// 	}
-		// 	else {
-		// 		// Print command
-		// 		print_command(argvv, filev, in_background);
-		// 	}
-		// }
-
         if (strcmp(argvv[0][0], "mycalc") == 0) {
             mycalc(argvv[0]); // Paso el primer arreglo de argumentos a mycalc
             continue;
@@ -315,7 +253,7 @@ int main(int argc, char* argv[])
                 } else {
                     head = (head + 1) % history_size; // Avanzar la cabeza si el buffer está lleno
                 }
-                //print_command(argvv, filev, in_background);
+                // print_command(argvv, filev, in_background);
             }
         }
 
@@ -324,41 +262,12 @@ int main(int argc, char* argv[])
         // 1. Execution of simple commands
 		// if there is only one single command, no pipes
         if (1 == command_counter)
-        {  
-            pid_t pid = fork();
-            // Child process
-            if (pid == 0) {
-                // 4. Execution of simple commands and sequence of commands with redirections (input, output
-                // and error) and in background.         
-                // Execute the command*/
-                if (filev[0][0] != '\0' && strcmp(filev[0], "0") != 0) {
-                    redirect_io(filev[0], NULL, NULL);
-                }
-                if (filev[1][0] != '\0' && strcmp(filev[1], "0") != 0) {
-                    redirect_io(NULL, filev[1], NULL);
-                }
-                if (filev[2][0] != '\0' && strcmp(filev[2], "0") != 0) {
-                    redirect_io(NULL, NULL, filev[2]);
-                }
-                execvp(argvv[0][0], argvv[0]);
-                // If execvp returns, an error occurred
-                perror("execvp error");
-                exit(EXIT_FAILURE);
+        {
+            if (!filev){
+                execute_single_command(argvv, in_background);
             }
-            // Parent process
-            else if (pid > 0) { 
-                if (!in_background) {
-                    // Wait for the child process to finish
-                    waitpid(pid, NULL, 0);
-                }
-                else {
-                    // 2. single command in background running (parent) 
-                    printf("Process %d running in background\n", pid);
-                }
-            } 
-            else {
-                // Handle fork failure
-                perror("fork error");
+            else{
+                execute_single_command_redirection(argvv, filev, in_background);
             }
         }
         else{
@@ -367,7 +276,7 @@ int main(int argc, char* argv[])
                 execute_command_sequence(&argvv, command_counter);
             }
             else{
-                execute_command_sequence_with_redirection(&argvv, command_counter, filev);
+                execute_command_sequence_with_redirection(&argvv, filev, command_counter);
             }
         }
                 
@@ -378,6 +287,74 @@ int main(int argc, char* argv[])
     free(history);
 	return 0;
 };
+
+
+// functions:
+// 1. Execution of simple commands
+void execute_single_command(char ***argvv, int in_background) {
+    pid_t pid = fork();
+    
+    if (pid == 0) {                     
+        // Child process
+        execvp(argvv[0][0], argvv[0]); // Execute the command
+        // If execvp returns, an error occurred
+        perror("execvp error");
+        exit(EXIT_FAILURE);
+    // Parent process
+    }
+    else if (pid > 0) { 
+        if (!in_background) {
+            // Wait for the child process to finish
+            waitpid(pid, NULL, 0);
+        }
+        else {
+            // 2. single command in background running (parent) 
+            printf("Process %d running in background\n", pid);
+        }
+    } 
+    else {
+        // Handle fork failure
+        perror("fork error");
+    }
+}
+
+// 4.1 Execution of simple commands with redirections
+void execute_single_command_redirection(char ***argvv, char filev[3][64], int in_background) {
+    pid_t pid = fork();
+
+    if (pid == 0) { // Child process
+        // Apply redirections
+        if (filev[0][0] != '\0' && strcmp(filev[0], "0") != 0) {
+            redirect_io(filev[0], NULL, NULL);
+        }
+        if (filev[1][0] != '\0' && strcmp(filev[1], "0") != 0) {
+            redirect_io(NULL, filev[1], NULL);
+        }
+        if (filev[2][0] != '\0' && strcmp(filev[2], "0") != 0) {
+            redirect_io(NULL, NULL, filev[2]);
+        }
+
+        execvp(argvv[0][0], argvv[0]);
+        perror("execvp error"); // Only runs if execvp fails
+        exit(EXIT_FAILURE);
+    // Parent process
+    }
+    else if (pid > 0) { 
+        if (!in_background) {
+            // Wait for the child process to finish
+            waitpid(pid, NULL, 0);
+        }
+        else {
+            // 2. single command in background running (parent) 
+            printf("Process %d running in background\n", pid);
+        }
+    } 
+    else {
+        // Handle fork failure
+        perror("fork error");
+    }
+}
+
 
 // 3. Execution of sequences of commands connected through pipes
 void execute_command_sequence(char ****argvv, int num_commands) {
@@ -438,35 +415,40 @@ void execute_command_sequence(char ****argvv, int num_commands) {
 }
 
 
-
-
+// redirections
 void redirect_io(char *input_file, char *output_file, char *error_file) {
-    if (input_file) {
+    if (input_file && input_file[0] != '\0') {
         int in_fd = open(input_file, O_RDONLY);
         if (in_fd != -1) {
             dup2(in_fd, STDIN_FILENO);
             close(in_fd);
+        } else {
+            perror("open input file");
         }
     }
-    if (output_file) {
+    if (output_file && output_file[0] != '\0') {
         int out_fd = open(output_file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
         if (out_fd != -1) {
             dup2(out_fd, STDOUT_FILENO);
             close(out_fd);
+        } else {
+            perror("open output file");
         }
     }
-    if (error_file) {
+    if (error_file && error_file[0] != '\0') {
         int err_fd = open(error_file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
         if (err_fd != -1) {
             dup2(err_fd, STDERR_FILENO);
             close(err_fd);
+        } else {
+            perror("open error file");
         }
     }
 }
 
 
 // 3. Execution of sequences of commands connected through pipes with redirection
-void execute_command_sequence_with_redirection(char ****argvv, int num_commands, char filev[3][64]) {
+void execute_command_sequence_with_redirection(char ****argvv, char filev[3][64], int num_commands) {
     int num_pipes = num_commands - 1;
     int pipe_fds[2 * num_pipes];
 
@@ -542,5 +524,74 @@ void execute_command_sequence_with_redirection(char ****argvv, int num_commands,
     // Parent waits for all child processes to complete
     for (int i = 0; i < num_commands; i++) {
         wait(NULL);
+    }
+}
+
+
+// 5.1 mycalc function
+void mycalc(char **args) {
+    if (!args[1] || !args[2] || !args[3]) {
+        printf("[ERROR] The structure of the command is mycalc <operand_1> <add/mul/div> <operand_2>\n");
+        return;
+    }
+
+    int op1 = atoi(args[1]);
+    int op2 = atoi(args[3]);
+    char *operator = args[2];
+    int result, remainder;
+
+    if (strcmp(operator, "add") == 0) {
+        result = op1 + op2;
+        acc += result;
+        fprintf(stderr, "[OK] %d + %d = %d; Acc %d\n", op1, op2, result, acc);
+    } else if (strcmp(operator, "mul") == 0) {
+        result = op1 * op2;
+        fprintf(stderr, "[OK] %d * %d = %d\n", op1, op2, result);
+    } else if (strcmp(operator, "div") == 0) {
+        if (op2 == 0) {
+            printf("[ERROR] Division by zero is not allowed.\n");
+            return;
+        }
+        result = op1 / op2;
+        remainder = op1 % op2;
+        fprintf(stderr, "[OK] %d / %d = %d; Remainder %d\n", op1, op2, result, remainder);
+    } else {
+        printf("[ERROR] The structure of the command is mycalc <operand_1> <add/mul/div> <operand_2>\n");
+    }
+}
+
+
+ // 5.2 myhistory function
+void myhistory(char **args) {
+    if (args[1] == NULL) {
+        // No se proporcionó un argumento, imprimir historial
+        int start = n_elem < history_size ? 0 : head;
+        int count = 0;
+        // fprintf(stderr, "History of commands:\n");
+        for (int i = start; i < start + n_elem && count < history_size; i++, count++) {
+            int index = i % history_size;
+            fprintf(stderr, "%d ", count);
+            for (int j = 0; j < history[index].num_commands; j++) {
+                for (int k = 0; k < history[index].args[j]; k++) {
+                    fprintf(stderr, "%s ", history[index].argvv[j][k]);
+                }
+                if (j < history[index].num_commands - 1) {
+                    fprintf(stderr, "| ");
+                }
+            }
+            fprintf(stderr, "\n");
+        }
+    } else {
+        // Se proporcionó un argumento, intentar ejecutar ese comando del historial
+        int index = atoi(args[1]);
+        if (index < 0 || index >= n_elem || index >= history_size) {
+            fprintf(stdout, "ERROR: Command not found\n");
+        } else {
+            int real_index = (head + index) % history_size;
+            fprintf(stderr, "Running command %d\n", index);
+            // Re-ejecutar el comando como si fuera recién introducido
+            execvp(history[real_index].argvv[0][0], history[real_index].argvv[0]);
+            perror("execvp failed");
+        }
     }
 }
