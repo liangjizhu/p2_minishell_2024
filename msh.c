@@ -259,26 +259,34 @@ int main(int argc, char* argv[])
             }
         }
 
+        bool hasRedirection = false;
+
+        // Check if there's any redirection specified (not empty and not "0")
+        for (int i = 0; i < 3; i++) {
+            if (filev[i][0] != '\0' && strcmp(filev[i], "0") != 0) {
+                hasRedirection = true;
+                break;
+            }
+        }
         
 
         // 1. Execution of simple commands
 		// if there is only one single command, no pipes
         if (1 == command_counter)
         {
-            if (!filev){
-                execute_single_command(argvv, in_background);
+            if (hasRedirection){
+                execute_single_command_redirection(argvv, filev, in_background);
             }
             else{
-                execute_single_command_redirection(argvv, filev, in_background);
+                execute_single_command(argvv, in_background);
             }
         }
         else{
             // 3. Execution of sequences of commands connected through pipes
-            if (!filev){
-                execute_command_sequence(&argvv, command_counter);
-            }
-            else{
+            if (hasRedirection) {
                 execute_command_sequence_with_redirection(&argvv, filev, command_counter);
+            } else {
+                execute_command_sequence(&argvv, command_counter);
             }
         }
                 
@@ -437,6 +445,7 @@ void redirect_io(char *input_file, char *output_file, char *error_file) {
             perror("open output file");
         }
     }
+    // Only redirect STDERR if a specific error file is provided
     if (error_file && error_file[0] != '\0') {
         int err_fd = open(error_file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
         if (err_fd != -1) {
@@ -450,7 +459,6 @@ void redirect_io(char *input_file, char *output_file, char *error_file) {
 
 
 // 3. Execution of sequences of commands connected through pipes with redirection
-// Execute a sequence of commands with redirection and pipes
 // Execute a sequence of commands with redirection and pipes
 void execute_command_sequence_with_redirection(char ****argvv, char filev[3][64], int num_commands) {
     int num_pipes = num_commands - 1;
