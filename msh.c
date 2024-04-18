@@ -611,11 +611,13 @@ void execute_command_sequence_with_redirection(char ****argvv, char filev[3][64]
 
 // 5.1 mycalc function
 void mycalc(char **args) {
+    // Check if the command has the correct number of arguments
     if (!args[1] || !args[2] || !args[3]) {
         printf("[ERROR] The structure of the command is mycalc <operand_1> <add/mul/div> <operand_2>\n");
         return;
     }
 
+    // Parse the arguments op1, operator, and op2
     int op1 = atoi(args[1]);
     int op2 = atoi(args[3]);
     char *operator = args[2];
@@ -625,22 +627,24 @@ void mycalc(char **args) {
     char *acc_env = getenv("Acc");
     int acc = (acc_env) ? atoi(acc_env) : 0;
 
+    // Perform the operation
     if (strcmp(operator, "add") == 0) {
-        result = op1 + op2;
-        acc += result;
+        result = op1 + op2; // Perform the addition
+        acc += result; // Update the acc variable
     } else if (strcmp(operator, "mul") == 0) {
-        result = op1 * op2;
+        result = op1 * op2; // Perform the multiplication
     } else if (strcmp(operator, "div") == 0) {
+        // Not allowed to divide by zero
         if (op2 == 0) {
             printf("[ERROR] Division by zero is not allowed.\n");
             return;
         }
-        result = op1 / op2;
-        remainder = op1 % op2;
-        fprintf(stderr, "[OK] %d / %d = %d; Remainder %d\n", op1, op2, result, remainder);
+        result = op1 / op2; // Perform the division
+        remainder = op1 % op2; // Calculate the remainder
+        fprintf(stderr, "[OK] %d / %d = %d; Remainder %d\n", op1, op2, result, remainder); // Print the result of the division
         return;
     } else {
-        printf("[ERROR] The structure of the command is mycalc <operand_1> <add/mul/div> <operand_2>\n");
+        printf("[ERROR] The structure of the command is mycalc <operand_1> <add/mul/div> <operand_2>\n"); // Print an error message if the operator is not valid
         return;
     }
 
@@ -661,36 +665,37 @@ void mycalc(char **args) {
 
 // 5.2 myhistory function
 void myhistory(char **args) {
+    // Check if the command has one argument
     if (args[1] == NULL) {
-        // Print the historial
         int start = n_elem < history_size ? 0 : head;
         int count = 0;
-
+        // Print the last 20 commands in the history
         for (int i = start; i < start + n_elem && count < history_size; i++, count++) {
-            int index = i % history_size;
-            fprintf(stderr, "%d ", count);
+            int index = i % history_size; // Get the index of the command
+            fprintf(stderr, "%d ", count); // Print the index
+            // Print the command with its arguments
             for (int j = 0; j < history[index].num_commands; j++) {
                 for (int k = 0; k < history[index].args[j]; k++) {
-                    fprintf(stderr, "%s ", history[index].argvv[j][k]);
+                    fprintf(stderr, "%s ", history[index].argvv[j][k]); // Print the argument
                 }
                 if (j < history[index].num_commands - 1) {
-                    fprintf(stderr, "| ");
+                    fprintf(stderr, "| "); // Print the pipe symbol if there are more commands
                 }
             }
             fprintf(stderr, "\n");
         }
     } else {
         // Execute a command from the historial
-        int index = atoi(args[1]);
+        int index = atoi(args[1]); // Get the index of the command
         if (index < 0 || index >= n_elem || index >= history_size) {
-            fprintf(stdout, "ERROR: Command not found\n");
+            fprintf(stdout, "ERROR: Command not found\n"); // Print an error message if the index is out of bounds
         } else {
-            int real_index = (head + index) % history_size;
-            fprintf(stderr, "Running command %d\n", index);
+            int real_index = (head + index) % history_size; // Get the real index of the command
+            fprintf(stderr, "Running command %d\n", index); // Print the index of the command being executed
             
             pid_t pid = fork();
             if (pid == 0) { // Child process
-                execvp(history[real_index].argvv[0][0], history[real_index].argvv[0]);
+                execvp(history[real_index].argvv[0][0], history[real_index].argvv[0]); // Execute the command from the history of the index
                 perror("execvp failed");
                 exit(EXIT_FAILURE); // Exit if excvp fails
             } else if (pid > 0) { // Parent process
